@@ -24,7 +24,7 @@
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.5s ease-out;
-  max-width: 840px;
+  max-width: 900px;
   &.search-active {
     grid-template-rows: 1fr;
   }
@@ -45,7 +45,7 @@
   max-height: 600px;
   overflow-y: auto;
   width: calc(100% - 4rem);
-  max-width: 840px;
+  max-width: 900px;
   background: themes.$background;
   display: grid;
   grid-template-rows: 0fr;
