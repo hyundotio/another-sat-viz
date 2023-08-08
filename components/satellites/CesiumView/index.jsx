@@ -35,7 +35,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const throttledSetCurrentTime = useCallback(
     throttle(setCurrentTime, 60)
-  , []);
+  , []); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
@@ -529,7 +529,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       viewer.current.camera.flyHome(0.5); // set initial camera position
     });
 
-  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded]);
+  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded, handleSelectEntity, throttledSetCurrentTime]);
 
   return (
     
@@ -546,6 +546,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               objectCategories={objectCategories}
               toggleCategoryVisibility={toggleCategoryVisibility}
             />
+            <div className={styles['divider']}></div>
             <div className={styles['details-container']}>
               <label className="cds--label">Color legend</label>
               <UnorderedList className={styles['legend-container']}>
@@ -581,7 +582,13 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                   Orbits propagated via TLE SPG4 method with satellite.js
                 </ListItem>
                 <ListItem>
-                  Data source updated at: {'not yet implemented'}
+                  Visualization powered by Cesium
+                </ListItem>
+                <ListItem>
+                  Basemap provided by Mapbox
+                </ListItem>
+                <ListItem>
+                  Made by Hyun
                 </ListItem>
               </UnorderedList>
             </div>
@@ -601,6 +608,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               kind="secondary"
               renderIcon={isSearchOpen ? Close : Table}
+              size="md"
             >
               {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
             </Button>
@@ -632,6 +640,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               selectedEntities.length ?
                 <div>
                 <Button
+                  size="md"
                   label="Clear selection"
                   onClick={() => setIsSelectedEntitiesListOpen(v => !v)}
                   kind="secondary"
@@ -657,7 +666,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               failMessage.catname && failMessage.satnum ? 
               <ToastNotification
                 lowContrast
-                subtitle={<span>Enable {failMessage.catname} in "Visible object types" to track and select {failMessage.satnum}</span>}
+                subtitle={<span>{`Enable ${failMessage.catname} in "Visible object types" to track and select ${failMessage.satnum}`}</span>}
                 timeout={6000}
                 title="Unable to track & select"
               /> : null

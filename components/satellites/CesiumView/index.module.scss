@@ -5,10 +5,17 @@
 .content {
   position: relative;
 }
+
+.divider {
+  margin: 1.5rem 0;
+  height: 1px;
+  width: 100%;
+  background-color: themes.$layer-accent-01;
+}
 .search-container {
   z-index: 99;
   position: absolute;
-  top: calc(3.5rem + 48px);
+  top: calc(3rem + 48px);
   left: 2rem;
   max-height: 600px;
   overflow-y: auto;
@@ -33,7 +40,7 @@
 .selected-entities-container {
   z-index: 99;
   position: absolute;
-  bottom: calc(2rem + 48px);
+  bottom: calc(2rem + 40px);
   left: 2rem;
   max-height: 600px;
   overflow-y: auto;
@@ -75,14 +82,14 @@
   left: 0;
   top: 0;
   z-index: 99;
-  width: 460px;
+  width: 434px;
   height: 100%;
   transition: 0.2s width ease-out;
   overflow-x: hidden;
   overflow-y: auto;
   .left-sidebar-contents {
     padding: 2rem;
-    width: 460px;
+    width: 434px;
   }
 }
 
@@ -129,7 +136,7 @@
 }
 
 .content {
-  width: calc(100% - 460px);
+  width: calc(100% - 434px);
   height: 100vh;
   position: absolute;
   top: 0;
