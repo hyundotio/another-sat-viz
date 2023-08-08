@@ -1,22 +1,32 @@
 // utils
 import { memo, useState, useCallback, useEffect } from "react";
 import { debounce } from "lodash";
-import { useDispatch, useSelector } from "react-redux";
-import { setSearchFilterValue2 } from "@/store/reducers/satellitesSlice";
 import { Reset } from '@carbon/icons-react';
-import { Pagination, PaginationNav, DataTable, TableContainer, Table, TableHead, TableRow, TableToolbarSearch, Button, TableHeader, TableBody, TableCell, TableBatchActions, TableToolbar, TableBatchAction, TableToolbarContent, TableToolbarMenu, TableToolbarAction } from '@carbon/react';
+import {
+  Pagination, 
+  DataTable,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableToolbarSearch,
+  Button,
+  TableHeader,
+  TableBody,
+  TableCell, 
+  TableToolbar, 
+  TableToolbarContent, 
+} from '@carbon/react';
+
 const getUTCDate = require("@/utils/shared/getUTCDate");
 
 // components and styles
 import styles from "./index.module.scss";
 
-const SelectedEntitiesList = ({ selectEntity, trackEntity, selectedEntities, clearExtraEntities }) => {
-  const itemsChangeCount = 30;
-  const dispatch = useDispatch();
-  const searchFilterValue = useSelector((state) => state.satellites.searchFilterValue2);
-  const showingSearchItemsCount = useSelector((state) => state.satellites.showingSearchItemsCount2);
+const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntities }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchFilterValue, setSearchFilterValue] = useState("");
   const [inputSearchValue, setInputSearchValue] = useState("");
 
   const changePaginationState = (pageInfo) => {
@@ -28,7 +38,6 @@ const SelectedEntitiesList = ({ selectEntity, trackEntity, selectedEntities, cle
     }
   }
 
-
   useEffect(() => {
     setInputSearchValue(searchFilterValue);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,8 +46,8 @@ const SelectedEntitiesList = ({ selectEntity, trackEntity, selectedEntities, cle
   // Debounce search filtering
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSearchChange = useCallback(
-    debounce((value) => dispatch(setSearchFilterValue2(value)), 300),
-    [dispatch]
+    //debounce search
+    debounce((value) => setSearchFilterValue(value), 300), []
   );
   
   const handleInputChange = (e) => {
@@ -82,7 +91,6 @@ const SelectedEntitiesList = ({ selectEntity, trackEntity, selectedEntities, cle
 
     return items
       .sort((a, b) => b.epochDate - a.epochDate)
-      .slice(0, showingSearchItemsCount)
       .map((entity) => {
         return entity ? {
           common_name: entity.name,
@@ -118,6 +126,7 @@ const SelectedEntitiesList = ({ selectEntity, trackEntity, selectedEntities, cle
             <TableToolbar>
               <TableToolbarContent>
                 <TableToolbarSearch
+                  value={inputSearchValue}
                   id="selected-entities-list-search"
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
                   onChange={handleInputChange}

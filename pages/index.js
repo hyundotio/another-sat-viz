@@ -19,7 +19,7 @@ const Satellites = ({ recentLaunches, token }) => {
   return (
     <Layout>
       <Head>
-        <title>Yet another globe with dots</title>
+        <title>Yet another globe with space dots</title>
       </Head>
 
       <Theme theme={"g100"}>

@@ -1,9 +1,7 @@
 // utils
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import propagateObjects from "@/utils/satellites/propagateObjects";
-import { setSearchFilterValue, setShowingSearchItemsCount } from "@/store/reducers/satellitesSlice";
 import { Globe, Close, Table, SelectWindow } from '@carbon/icons-react';
-import { useDispatch } from "react-redux";
 import { throttle } from "lodash";
 import { Button, UnorderedList, ListItem } from '@carbon/react';
 
@@ -14,18 +12,12 @@ import styles from "./index.module.scss";
 import Search from "@/components/satellites/Search";
 import SelectedEntitiesList from "@/components/satellites/SelectedEntitiesList";
 
-const CesiumView = ({
-  recentLaunches,
-  token,
-  setLoadingStatus,
-}) => {
-  const dispatch = useDispatch();
+const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const interpolationDegree = 7;
   const initialClockMultiplier = 0;
   const startDate = useMemo(() => new Date(), []);
   const viewer = useRef({}); // Cesium viewer object reference
-
 
   // categories that will have their objects hidden on load
   const hiddenByDefault = useMemo(() => ["Unknown", "Rocket body", "Debris"], []);
@@ -51,33 +43,12 @@ const CesiumView = ({
       const start = helperFunctionsRef.current.JulianDate.fromDate(dateToUse);
       viewer.current.clock.startTime = start.clone();
       viewer.current.clock.currentTime = start.clone();
-      // vv Kill candidate
-      /*
-      viewer.current.entities.values.forEach((entity) => {
-        if (entity.clock) {
-          entity.clock.startTime = start.clone();
-          entity.clock.currentTime = start.clone();
-          entity.clock.shouldAnimate = false;
-        }
-      });
-      */
-      // ^^ Kill candidate
       changePointsVisibility(null, true);
     }
   }
 
   // change time flow multiplier
   const changeMultiplier = (multiplier) => {
-    // vv Kill candidate
-    /*
-    viewer.current.entities.values.forEach((entity) => {
-      if (entity.clock) {
-        entity.clock.multiplier = multiplier;
-        entity.clock.shouldAnimate = multiplier !== 0;
-      }
-    });
-    */
-    // ^^ Kill candidate
     viewer.current.clock.shouldAnimate = multiplier !== 0;
     viewer.current.clock.multiplier = multiplier;
   };
@@ -245,6 +216,7 @@ const CesiumView = ({
   }, [hiddenByDefault, recentLaunches, startDate]);
 
   const resetCamera = () => {
+    //Reset camera to untrack
     setIsTracking(false);
     viewer.current.trackedEntity = undefined;
     viewer.current.camera.flyHome(0.6); // animation time in seconds
@@ -271,6 +243,7 @@ const CesiumView = ({
   };
 
   const trackEntity = (id) => {
+    //Function is used to camera track an entity
     let entity;
     if (id !== undefined) {
       entity = viewer.current.entities.getById(id);
@@ -282,6 +255,7 @@ const CesiumView = ({
   }
 
   const selectEntity = (id) => {
+    //Function is used to select an entity or unselect.
     if (id) {
       const entity = viewer.current.entities.getById(id);
       // Start tracking the entity
@@ -344,7 +318,10 @@ const CesiumView = ({
         Cartographic: Cesium.Cartographic
       }
 
-      Cesium.Ion.defaultAccessToken = token;
+      if (process.env.NEXT_PUBLIC_CESIUM_TOKEN) {
+        Cesium.Ion.defaultAccessToken = process.env.NEXT_PUBLIC_CESIUM_TOKEN;
+      }
+      
 
       // create Cesium viewer
       viewer.current = new Cesium.Viewer("cesium-container", {
@@ -365,14 +342,15 @@ const CesiumView = ({
         maximumScreenSpaceError: 128
       });
 
-      const mapboxLayer = new Cesium.UrlTemplateImageryProvider({
-        url : 'https://api.mapbox.com/styles/v1/hyunkseo91/clkvncy1c009d01qp23rsdf04/tiles/256/%7Bz%7D/%7Bx%7D/%7By%7D@2x?access_token=pk.eyJ1IjoiaHl1bmtzZW85MSIsImEiOiJjazgwZTFhZ2MwNHJ0M25xaG1hMTZhbGwxIn0.IgzUxjwNb1-3gEkVT2pF_Q',
-     });
-
-      // set world imagery
-      viewer.current.imageryLayers.addImageryProvider(
-        mapboxLayer
-      );
+      if (process.env.NEXT_PUBLIC_MAPBOX_URL) {
+        const mapboxLayer = new Cesium.UrlTemplateImageryProvider({
+          url : process.env.NEXT_PUBLIC_MAPBOX_URL,
+       });
+        // set world imagery
+        viewer.current.imageryLayers.addImageryProvider(
+          mapboxLayer
+        );
+      }
 
       // add settings for Cesium
       const start = Cesium.JulianDate.fromDate(startDate);
@@ -518,135 +496,134 @@ const CesiumView = ({
       viewer.current.camera.flyHome(0.5); // set initial camera position
     });
 
-    return () => {
-      dispatch(setSearchFilterValue(""));
-      dispatch(setShowingSearchItemsCount(100));
-    };
-  }, [dispatch, isLoaded, propagateCategories, setLoadingStatus, startDate, token, fontIsLoaded]);
+  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded]);
 
   return (
-    <>
-      <div className={styles['left-sidebar-container']}>
-        <div className={styles['left-sidebar-contents']}>
-          <TimeControls
-            handleMultiplierChange={changeMultiplier}
-            currentTime={currentTime}
-            resetClock={resetClock}
-            startDate={startDate}
-          />
-          <Options
-            objectCategories={objectCategories}
-            toggleCategoryVisibility={toggleCategoryVisibility}
-          />
-          <div className={styles['details-container']}>
-            <label className="cds--label">Color legend</label>
-            <UnorderedList className={styles['legend-container']}>
-              <ListItem className={styles['legend-list-item']}>
-                <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active" /> Active objects
-              </ListItem>
-              <ListItem className={styles['legend-list-item']}>
-                <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
-              </ListItem>
-            </UnorderedList>
-          </div>
-          <div className={styles['details-container']}>
-            <label className="cds--label">Shape legend</label>
-            <UnorderedList className={styles['legend-container']}>
-              <ListItem className={styles['legend-list-item']}>
-                <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
-              </ListItem>
-              <ListItem className={styles['legend-list-item']}>
-                <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
-              </ListItem>
-              <ListItem className={styles['legend-list-item']}>
-                <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
-              </ListItem>
-            </UnorderedList>
-          </div>
-          <div className={styles['details-container']}>
-            <label className="cds--label">Details</label>
-            <UnorderedList>
-              <ListItem>
-                Data source: Space-Track general perbutation (GP) TLEs
-              </ListItem>
-              <ListItem>
-                Orbits propagated via TLE SPG4 method with satellite.js
-              </ListItem>
-              <ListItem>
-                Data source updated at: {'not yet implemented'}
-              </ListItem>
-            </UnorderedList>
+    
+      <>
+        <div className={styles['left-sidebar-container']}>
+          <div className={styles['left-sidebar-contents']}>
+            <TimeControls
+              handleMultiplierChange={changeMultiplier}
+              currentTime={currentTime}
+              resetClock={resetClock}
+              startDate={startDate}
+            />
+            <Options
+              objectCategories={objectCategories}
+              toggleCategoryVisibility={toggleCategoryVisibility}
+            />
+            <div className={styles['details-container']}>
+              <label className="cds--label">Color legend</label>
+              <UnorderedList className={styles['legend-container']}>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active" /> Active objects
+                </ListItem>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
+                </ListItem>
+              </UnorderedList>
+            </div>
+            <div className={styles['details-container']}>
+              <label className="cds--label">Shape legend</label>
+              <UnorderedList className={styles['legend-container']}>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
+                </ListItem>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
+                </ListItem>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
+                </ListItem>
+              </UnorderedList>
+            </div>
+            <div className={styles['details-container']}>
+              <label className="cds--label">Details</label>
+              <UnorderedList>
+                <ListItem>
+                  Data source: Space-Track general perbutation (GP) TLEs
+                </ListItem>
+                <ListItem>
+                  Orbits propagated via TLE SPG4 method with satellite.js
+                </ListItem>
+                <ListItem>
+                  Data source updated at: {'not yet implemented'}
+                </ListItem>
+              </UnorderedList>
+            </div>
           </div>
         </div>
-      </div>
 
-      <main className={styles["content"]}>
-        <div
-          id="cesium-container"
-          className={`
-            fullSize
-          `}
-        ></div>
-        <div className={styles['search-button-container']}>
-          <Button
-            label={isSearchOpen ? 'Close data table' : 'Open data table'}
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            kind="secondary"
-            renderIcon={isSearchOpen ? Close : Table}
-          >
-            {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
-          </Button>
-        </div>
-        <div className={`${styles['search-container']} ${isSearchOpen ? styles['search-active'] : null}`}>
-          <Search
-            entities={!viewer.current?.entities?.values?.length
-              ? []
-              : viewer.current.entities.values
-                .filter((entity) => entity.billboard)
-                .map((entity) => ({
-                  id: entity.id,
-                  name: entity.name.toLowerCase(),
-                  categoryName: entity.categoryName.toLowerCase(),
-                  satnum: entity.satnum,
-                  epochDate: entity.epochDate,
-                  visible: entity.isShowing
-                }))
-            }
-            trackEntity={trackEntity}
-            selectedEntities={selectedEntities}
-            selectEntity={selectEntity}
-            setIsSearchOpen={setIsSearchOpen}
-          />
-        </div>
-        
-        <div className={styles['selected-entities-button-container']}>
-          {
-            selectedEntities.length ?
-              <div>
-              <Button
-                label="Clear selection"
-                onClick={() => setIsSelectedEntitiesListOpen(v => !v)}
-                kind="secondary"
-                renderIcon={isSelectedEntitiesListOpen ? Close : SelectWindow}
-              >
-                {isSelectedEntitiesListOpen ? 'Close Selection controls' : 'Open Selection controls'}
-              </Button></div> : null
-          }
-          {
-            isTracking ? 
-            <div><Button label="Reset camera view" onClick={resetCamera} kind="secondary" renderIcon={Globe}>Reset camera</Button></div> : null
-          }
-        </div>
-        <div className={`${styles['selected-entities-container']} ${isSelectedEntitiesListOpen ? styles['selected-entities-list-active'] : null}`}>
-          <SelectedEntitiesList
-              selectedEntities={selectedEntities}
-              clearExtraEntities={clearExtraEntities}
+        <main className={styles["content"]}>
+          <div
+            id="cesium-container"
+            className={`
+              fullSize
+            `}
+          ></div>
+          <div className={styles['search-button-container']}>
+            <Button
+              label={isSearchOpen ? 'Close data table' : 'Open data table'}
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              kind="secondary"
+              renderIcon={isSearchOpen ? Close : Table}
+            >
+              {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
+            </Button>
+          </div>
+          <div className={`${styles['search-container']} ${isSearchOpen ? styles['search-active'] : null}`}>
+            <Search
+              entities={!viewer.current?.entities?.values?.length
+                ? []
+                : viewer.current.entities.values
+                  .filter((entity) => entity.billboard)
+                  .map((entity) => ({
+                    id: entity.id,
+                    name: entity.name.toLowerCase(),
+                    categoryName: entity.categoryName.toLowerCase(),
+                    satnum: entity.satnum,
+                    epochDate: entity.epochDate,
+                    visible: entity.isShowing
+                  }))
+              }
               trackEntity={trackEntity}
-          />
-        </div>
-        
-      </main>
-    </>
+              selectedEntities={selectedEntities}
+              selectEntity={selectEntity}
+              setIsSearchOpen={setIsSearchOpen}
+            />
+          </div>
+          
+          <div className={styles['selected-entities-button-container']}>
+            {
+              selectedEntities.length ?
+                <div>
+                <Button
+                  label="Clear selection"
+                  onClick={() => setIsSelectedEntitiesListOpen(v => !v)}
+                  kind="secondary"
+                  renderIcon={isSelectedEntitiesListOpen ? Close : SelectWindow}
+                >
+                  {isSelectedEntitiesListOpen ? 'Close Selection controls' : 'Open Selection controls'}
+                </Button></div> : null
+            }
+            {
+              isTracking ? 
+              <div><Button label="Reset camera view" onClick={resetCamera} kind="secondary" renderIcon={Globe}>Reset camera</Button></div> : null
+            }
+          </div>
+          <div className={`${styles['selected-entities-container']} ${isSelectedEntitiesListOpen ? styles['selected-entities-list-active'] : null}`}>
+              <SelectedEntitiesList
+                  selectedEntities={selectedEntities}
+                  clearExtraEntities={clearExtraEntities}
+                  trackEntity={trackEntity}
+              />
+          </div>
+          
+        </main>
+      </>
+      
+    
   );
 };
 
