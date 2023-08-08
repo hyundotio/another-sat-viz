@@ -23,6 +23,13 @@
   }
 }
 
+.notification-container {
+  position: fixed;
+  top: 3.5rem;
+  z-index: 99;
+  right: 2rem;
+}
+
 .selected-entities-container {
   z-index: 99;
   position: absolute;
