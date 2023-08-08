@@ -576,19 +576,19 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               <label className="cds--label">Details</label>
               <UnorderedList>
                 <ListItem>
-                  Data source: Space-Track general perbutation (GP) TLEs
+                  Data source: Space-Track General Perbutation TLEs
                 </ListItem>
                 <ListItem>
-                  Orbits propagated via TLE SPG4 method with satellite.js
+                  {`Orbits propagated with SPG4 via satellite.js`}
                 </ListItem>
                 <ListItem>
-                  Visualization powered by Cesium
+                  3D visualization powered by Cesium
                 </ListItem>
                 <ListItem>
                   Basemap provided by Mapbox
                 </ListItem>
                 <ListItem>
-                  Made by Hyun
+                  Orchestrated by Hyun
                 </ListItem>
               </UnorderedList>
             </div>
