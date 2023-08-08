@@ -406,18 +406,18 @@ const CesiumView = ({
       propagatedCategories.forEach((category) => {
         category.data.forEach(({position, orbitDuration, name, epochDate, satnum, orbitType, isManned}, i) => {
           let iconSize = 6.5;
-          let iconUrl = './Assets/Models/circle';
+          let iconUrl = './cesiumAssets/Models/circle';
           if (orbitType === 1) {
             iconSize = 20;
-            iconUrl = './Assets/Models/triangle';
+            iconUrl = './cesiumAssets/Models/triangle';
           }
           if (orbitType === 2) {
             iconSize = 16;
-            iconUrl = './Assets/Models/cross';
+            iconUrl = './cesiumAssets/Models/cross';
           }
           iconUrl = iconUrl + (category.isDebris ? '_debris.png' : '.png');
           if (isManned) {
-            iconUrl = './Assets/Models/manned.png';
+            iconUrl = './cesiumAssets/Models/manned.png';
             iconSize = 24;
           }
 
@@ -542,10 +542,10 @@ const CesiumView = ({
             <label className="cds--label">Color legend</label>
             <UnorderedList className={styles['legend-container']}>
               <ListItem className={styles['legend-list-item']}>
-                <img src="./Assets/Models/square.png" alt="Legend item for Active" /> Active objects
+                <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active" /> Active objects
               </ListItem>
               <ListItem className={styles['legend-list-item']}>
-                <img src="./Assets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
+                <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
               </ListItem>
             </UnorderedList>
           </div>
@@ -553,13 +553,13 @@ const CesiumView = ({
             <label className="cds--label">Shape legend</label>
             <UnorderedList className={styles['legend-container']}>
               <ListItem className={styles['legend-list-item']}>
-                <img src="./Assets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
+                <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
               </ListItem>
               <ListItem className={styles['legend-list-item']}>
-                <img src="./Assets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
+                <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
               </ListItem>
               <ListItem className={styles['legend-list-item']}>
-                <img src="./Assets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
+                <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
               </ListItem>
             </UnorderedList>
           </div>
