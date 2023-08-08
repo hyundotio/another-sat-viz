@@ -1,23 +1,35 @@
 // utils
 import { memo, useState, useCallback, useEffect } from "react";
 import { debounce } from "lodash";
-import { useDispatch, useSelector } from "react-redux";
-import { setSearchFilterValue, setShowingSearchItemsCount } from "@/store/reducers/satellitesSlice";
 import { Add, Subtract } from '@carbon/icons-react';
-import { Pagination, DataTable, TableContainer, Table, TableHead, TableRow, TableToolbarSearch, Button, TableHeader, TableBody, TableCell, TableBatchActions, TableToolbar, TableBatchAction, TableToolbarContent, TableToolbarMenu, TableToolbarAction } from '@carbon/react';
+import {
+  Pagination,
+  DataTable,
+  TableContainer, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableToolbarSearch, 
+  Button, 
+  TableHeader, 
+  TableBody, 
+  TableCell, 
+  TableToolbar, 
+  TableToolbarContent, 
+} from '@carbon/react';
+
 const getUTCDate = require("@/utils/shared/getUTCDate");
 
 // components and styles
 import styles from "./index.module.scss";
 
 const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, trackEntity }) => {
-  const itemsChangeCount = 30;
-  const dispatch = useDispatch();
-  const searchFilterValue = useSelector((state) => state.satellites.searchFilterValue);
-  const showingSearchItemsCount = useSelector((state) => state.satellites.showingSearchItemsCount);
+  const ITEMS_CHANGE_DELTA = 30;
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchFilterValue, setSearchFilterValue] = useState("");
   const [inputSearchValue, setInputSearchValue] = useState("");
+  const [showingSearchItemsCount, setShowingSearchItemsCount] = useState(30);
 
   const changePaginationState = (pageInfo) => {
     if (page !== pageInfo.page) {
@@ -28,7 +40,6 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
     }
   }
 
-
   useEffect(() => {
     setInputSearchValue(searchFilterValue);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,8 +48,8 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
   // Debounce search filtering
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSearchChange = useCallback(
-    debounce((value) => dispatch(setSearchFilterValue(value)), 300),
-    [dispatch]
+    debounce((value) => setSearchFilterValue(value), 300),
+    []
   );
   
   const handleInputChange = (e) => {
@@ -47,15 +58,15 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
   };
 
   const increaseShowingCount = () => {
-    dispatch(setShowingSearchItemsCount(showingSearchItemsCount + itemsChangeCount));
+    setShowingSearchItemsCount(showingSearchItemsCount + ITEMS_CHANGE_DELTA);
   };
 
   const decreaseShowingCount = () => {
-    const newCount = showingSearchItemsCount - itemsChangeCount;
+    const newCount = showingSearchItemsCount - ITEMS_CHANGE_DELTA;
 
     // Do not allow to set a very low amount
     if (newCount > 20) {
-      dispatch(setShowingSearchItemsCount(newCount));
+      setShowingSearchItemsCount(newCount);
     }
     if (page * pageSize > newCount) {
       setPage(1);
@@ -137,6 +148,7 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
                   id="catalog-explorer-search"
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
                   onChange={handleInputChange}
+                  value={inputSearchValue}
                 />
                 <Button
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}

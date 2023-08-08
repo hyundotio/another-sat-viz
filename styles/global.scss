@@ -1,34 +1,5 @@
-@import "./mixins.scss";
 
-html,
-body {
-  background-color: black;
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-  font-family: 'IBM Plex Sans', serif;
-  width: 100%;
-  height: 100%;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button,
-input,
-label {
-  border: 0;
-  font-family: 'IBM Plex Sans', serif;
-  cursor: pointer;
-}
-
-//fix
+//carbon fix
 .cds--data-table--xs thead tr th[aria-sort] {
   height: 1.5rem;
   .cds--table-sort__flex {

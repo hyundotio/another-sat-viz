@@ -1,6 +1,6 @@
 {
-  "name": "satellite-tracker",
-  "version": "2.0.0",
+  "name": "another-sat-viz",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,13 +13,11 @@
   },
   "dependencies": {
     "@carbon/react": "^1.35.0",
-    "@reduxjs/toolkit": "^1.9.2",
     "cesium": "^1.108.0",
     "lodash": "^4.17.21",
     "next": "^12.3.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-redux": "^8.0.5",
     "satellite.js": "^5.0.0"
   },
   "devDependencies": {
