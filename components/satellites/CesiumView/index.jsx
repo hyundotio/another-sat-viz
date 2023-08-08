@@ -565,7 +565,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                   <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
                 </ListItem>
                 <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
+                  <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
                 </ListItem>
                 <ListItem className={styles['legend-list-item']}>
                   <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
