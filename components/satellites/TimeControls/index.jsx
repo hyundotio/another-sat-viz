@@ -27,7 +27,7 @@ const TimeControls = ({
       setInputMultiplier(value);
 
       let expMultiplier = 0;
-      if (Math.abs(value) < 2) {
+      if (Math.abs(value) === 0) {
         // set time as stopped
         expMultiplier = 0;
       } else {
@@ -102,16 +102,16 @@ const TimeControls = ({
           </div>
           <div>
             <IconButton
-              label={Math.abs(exponentialMultiplier) ? 'Pause' : 'Play'}
+              label={Math.abs(inputMultiplier) ? 'Pause' : 'Play'}
               kind="secondary"
               onClick={() => {
-              if (Math.abs(exponentialMultiplier) > 0) {
-                stopTime();
-              } else {
-                handleTimeChange(30);
-              }
-            }}>
-              {Math.abs(exponentialMultiplier) > 0 ? <Pause /> : <Play />}
+                if (Math.abs(inputMultiplier) > 0) {
+                  stopTime();
+                } else {
+                  handleTimeChange(30);
+                }
+              }}>
+              {Math.abs(inputMultiplier) > 0 ? <Pause /> : <Play />}
             </IconButton>
           </div>
         </div>
