@@ -287,6 +287,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       if (entity.show) { 
         // Start tracking the entity
         viewer.current.trackedEntity = entity;
+        setIsTracking(true);
         // Trigger the selectedEntityChanged event manually to show
         // entity orbit path and label if it's not showing them yet
         handleSelectEntity({id: entity}, {
@@ -654,12 +655,26 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             }
             {
               isTracking ? 
-              <div><Button label="Reset camera view" onClick={resetCamera} kind="secondary" renderIcon={Globe}>Reset camera</Button></div> : null
+              <div><Button size="md" label="Reset camera view" onClick={resetCamera} kind="secondary" renderIcon={Globe}>Reset camera</Button></div> : null
             }
           </div>
           <div className={`${styles['selected-entities-container']} ${isSelectedEntitiesListOpen ? styles['selected-entities-list-active'] : null}`}>
               <SelectedEntitiesList
                   selectedEntities={selectedEntities}
+                  unselectEntities={(entities) => {
+                    //This is to handle Unselect from table.
+                    entities.forEach(ent => {
+                      const entity = viewer.current.entities.getById(ent.id);
+                      handleSelectEntity({id: entity}, {
+                        Color: helperFunctionsRef.current.Color,
+                        LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+                        Cartesian2: helperFunctionsRef.current.Cartesian2,
+                        Cartesian3: helperFunctionsRef.current.Cartesian3,
+                        LabelStyle: helperFunctionsRef.current.LabelStyle,
+                        VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+                      });
+                    })
+                  }}
                   clearExtraEntities={clearExtraEntities}
                   trackEntity={trackEntity}
               />
