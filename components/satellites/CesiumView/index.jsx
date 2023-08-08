@@ -588,6 +588,9 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                   Basemap provided by Mapbox
                 </ListItem>
                 <ListItem>
+                  UI components by IBM
+                </ListItem>
+                <ListItem>
                   Orchestrated by Hyun
                 </ListItem>
               </UnorderedList>
