@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import styles from "./index.module.scss";
+import { Checkbox } from '@carbon/react';
 
 const ObjectFiltering = ({ objectCategories, toggleCategoryVisibility }) => {
   const [categories, setCategories] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   const handleCategoryChange = (name) => {
     toggleCategoryVisibility(name);
@@ -16,37 +18,34 @@ const ObjectFiltering = ({ objectCategories, toggleCategoryVisibility }) => {
         ${cat.color.blue * 255},
         ${cat.color.alpha}
       )`;
+      const circle = <div className={styles["sat-type-circle"]} style={{backgroundColor: backgroundColor}}></div>
 
       return (
-        <li key={cat.name} className={styles["list-item"]}>
-          <input
-            type="checkbox"
-            id={cat.name}
-            checked={cat.visible}
-            onChange={() => handleCategoryChange(cat.name)}
-          />
-          <div
-            className={styles["circle"]}
-            style={{"backgroundColor": backgroundColor}}
-          ></div>
-          <label htmlFor={cat.name}>
-            ({cat.objectsCount}) {cat.name}
-          </label>
-        </li>
+        <Checkbox
+          labelText={<div className={styles["sat-checkbox-container"]}>{circle}{`${cat.name} - ${cat.objectsCount.toLocaleString()}`}</div>}
+          id={cat.name}
+          checked={cat.visible}
+          key={cat.name}
+          onChange={() => handleCategoryChange(cat.name)}
+        />
       );
     });
   };
 
   useEffect(() => {
-    setCategories(objectCategories);
+    if (objectCategories && objectCategories.length) {
+      setCategories(objectCategories);
+      setTotalCount(objectCategories.reduce((a,c) => c.objectsCount + a, 0));
+    }
+    
   }, [objectCategories]);
 
   return (
     <div className={styles["object-filtering"]}>
-      <p className={styles["title"]}>Object visibility:</p>
-      <ul className={styles["list"]}>
+      <fieldset className="cds--fieldset">
+        <legend className="cds--label">Visible object types ({totalCount.toLocaleString()} total)</legend>
         { categories.length > 0 && renderCategories() }
-      </ul>
+      </fieldset>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import "@/styles/global.scss";
+import "@/styles/app.scss";
 import "@/styles/satellites.scss";
 
 import { Provider } from "react-redux";

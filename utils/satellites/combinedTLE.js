@@ -1,90 +1,62 @@
 import { Color as CesiumColor } from "@/cesiumSource/Cesium";
-
-import communicationsTLE from "@/data/communications";
-import debrisTLE from "@/data/debris";
-import miscellaneousTLE from "@/data/miscellaneous";
-import navigationTLE from "@/data/navigation";
-import scientificTLE from "@/data/scientific";
-import specialInterestTLE from "@/data/special-interest";
-import starlinkTLE from "@/data/starlink";
-import weatherEarthTLE from "@/data/weather-earth";
-import fullCatalogTLE from "@/data/full-catalog";
+import gpCatalog from "@/data/gp.json";
 
 // https://cesium.com/learn/cesiumjs/ref-doc/Color.html
-const debrisColor = CesiumColor.FLORALWHITE.withAlpha(0.6);
-const starlinkColor = CesiumColor.GOLD.withAlpha(0.85);
-const communicationsColor = CesiumColor.MEDIUMSPRINGGREEN;
-const weatherEarthColor = CesiumColor.SALMON;
-const specialInterestColor = CesiumColor.RED;
-const scientificColor = CesiumColor.INDIANRED;
-const miscellaneousColor = CesiumColor.LIME;
-const navigationColor = CesiumColor.HOTPINK;
-const otherColor = CesiumColor.DODGERBLUE;
+const debrisColor = new CesiumColor.fromBytes(255, 214, 0,255);
+const payloadColor = new CesiumColor.fromBytes(15,98,255,255);
 
 const debris = {
   name: "Debris",
   color: debrisColor,
-  data: [...debrisTLE]
+  data: [],
+  isDebris: true,
+  needsDarkText: true
 };
 
-const specialInterest = {
-  name: "Special interest",
-  color: specialInterestColor,
-  data: [...specialInterestTLE]
+const rocketBody = {
+  name: "Rocket body",
+  color: debrisColor,
+  data: [],
+  isDebris: true,
+  needsDarkText: true
 };
 
-const weatherEarth = {
-  name: "Weather and Earth resources",
-  color: weatherEarthColor,
-  data: [...weatherEarthTLE]
+const unknown = {
+  name: "Unknown",
+  color: debrisColor,
+  data: [],
+  isDebris: true,
+  needsDarkText: true
 };
 
-const communications = {
-  name: "Communications",
-  color: communicationsColor,
-  data: [...communicationsTLE]
+const payload = {
+  name: "Payload",
+  color: payloadColor,
+  data: []
 };
 
-const starlink = {
-  name: "Starlink",
-  color: starlinkColor,
-  data: [...starlinkTLE]
-};
+const gpCatalogLen = gpCatalog.length;
 
-const navigation = {
-  name: "Navigation",
-  color: navigationColor,
-  data: [...navigationTLE]
-};
-
-const scientific = {
-  name: "Scientific",
-  color: scientificColor,
-  data: [...scientificTLE]
-};
-
-const miscellaneous = {
-  name: "Miscellaneous",
-  color: miscellaneousColor,
-  data: [...miscellaneousTLE]
-};
-
-const fullCatalogData = {
-  name: "Other",
-  color: otherColor,
-  data: [...fullCatalogTLE]
-};
+for (let i = 0; i < gpCatalogLen; i++) {
+  const gp = gpCatalog[i];
+  if (gp["TLE_LINE0"] && gp["TLE_LINE1"] && gp["TLE_LINE2"]) {
+    let target = unknown.data;
+    if (gp["OBJECT_TYPE"] === "DEBRIS") {
+      target = debris.data;
+    } else if (gp["OBJECT_TYPE"] === "ROCKET BODY") {
+      target = rocketBody.data;
+    } else if (gp["OBJECT_TYPE"] === "PAYLOAD") {
+      target = payload.data;
+    }
+    target.push(gp["TLE_LINE0"], gp["TLE_LINE1"], gp["TLE_LINE2"])
+  }
+}
 
 const combinedTLE = [
-  specialInterest,
-  scientific,
-  navigation,
-  weatherEarth,
-  starlink,
-  miscellaneous,
-  communications,
+  payload,
   debris,
-  fullCatalogData,
+  rocketBody,
+  unknown
 ];
 
 export default combinedTLE;

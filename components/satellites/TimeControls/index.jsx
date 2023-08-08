@@ -1,33 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./index.module.scss";
+import { Slider, TextInput, IconButton } from '@carbon/react';
+import { Play, Pause, SkipBack } from '@carbon/icons-react';
+
+function isIsoDate(str) {
+  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return false;
+  const d = new Date(str); 
+  return d instanceof Date && !isNaN(d.getTime()) && d.toISOString()===str; // valid date 
+}
+
+const SECONDS_IN_A_DAY = 86400000;
 
 const TimeControls = ({
   handleMultiplierChange,
-  isNavOpen,
-  isAboutOpen
+  currentTime,
+  resetClock,
+  startDate
 }) => {
   const [inputMultiplier, setInputMultiplier] = useState(0);
   const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
+  const [timestamp, setTimestamp] = useState(currentTime);
   const range = 100;
 
-  const handleTimeChange = (e) => {
-    setInputMultiplier(e.target.value);
+  const handleTimeChange = (value, existingValue) => {
+    if (!isNaN(value)) {
+      setInputMultiplier(value);
 
-    let expMultiplier = 0;
-    if (Math.abs(e.target.value) < 2) {
-      // set time as stopped
-      expMultiplier = 0;
-    } else {
-      // calculate exponentially rising multiplier
-      expMultiplier = Math.round(Math.exp((Math.log(range*100)/range) * Math.abs(e.target.value)));
-      if (e.target.value < 0) {
-        expMultiplier = expMultiplier * -1;
+      let expMultiplier = 0;
+      if (Math.abs(value) < 2) {
+        // set time as stopped
+        expMultiplier = 0;
+      } else {
+        // calculate exponentially rising multiplier
+        expMultiplier = Math.round(Math.exp((Math.log(range*100)/range) * Math.abs(value)));
+        if (value < 0) {
+          expMultiplier = expMultiplier * -1;
+        }
+      }
+      if (expMultiplier !== existingValue) {
+        setExponentialMultiplier(expMultiplier);
+        handleMultiplierChange(expMultiplier);
       }
     }
-
-    setExponentialMultiplier(expMultiplier);
-    handleMultiplierChange(expMultiplier);
   };
+
+  useEffect(() => {
+    setTimestamp(currentTime);
+  }, [currentTime]);
 
   const stopTime = () => {
     setInputMultiplier(0);
@@ -39,37 +58,63 @@ const TimeControls = ({
     <div
       className={`
         ${styles["time-controls"]}
-        ${isNavOpen ? styles["nav-open"] : ""}
-        ${isAboutOpen ? styles["about-open"] : ""}
       `}
     >
-      <p className={styles["time-text"]}>
-        Time flow multiplier:
-        <span className={styles["bold"]}>
-          {
-            exponentialMultiplier === 0 ?
-              " 0x (Stopped)" :
-              ` ${exponentialMultiplier}x`
-          }
-        </span>
-        {
-          exponentialMultiplier !== 0 &&
-          <button
-            className={styles["stop-time"]}
-            onClick={stopTime}
-          >
-            Stop
-          </button>
-        }
-      </p>
-      <input
-        type="range"
-        className={styles["time-range"]}
-        min={-range}
-        max={range}
-        value={inputMultiplier}
-        onChange={handleTimeChange}
-      />
+        <div className={styles['time-controls']}>
+          <TextInput
+            id="timestamp"
+            invalidText="A valid ISO8601 Timestamp is required"
+            helperText="+/- 80 minutes max"
+            labelText={`UTC Timestamp (Epoch: ${startDate.toISOString()})`}
+            placeholder="2023-08-31T12:34:56.789Z"
+            value={timestamp}
+            onChange={(e) => setTimestamp(e.target.value)}
+            onBlur={(e) => {
+              const startDateTs = startDate.getTime();
+              const newDate = new Date(e.target.value);
+              if (isIsoDate(e.target.value) && Math.abs(startDateTs - newDate.getTime()) < (SECONDS_IN_A_DAY * 3)) {
+                resetClock(newDate);
+              } else {
+                setTimestamp(currentTime);
+              }
+            }}
+          />
+        </div>
+        <Slider
+          id="time-slider"
+          labelText={`Playback speed`}
+          min={-range}
+          max={range}
+          value={inputMultiplier}
+          onChange={(d) => handleTimeChange(d.value, exponentialMultiplier)}
+        />
+        <div className={styles['control-buttons-container']}>
+          <div>
+            <IconButton
+              label='Reset clock'
+              kind="secondary"
+              onClick={() => {
+                stopTime();
+                resetClock();
+              }}>
+                <SkipBack />
+              </IconButton>
+          </div>
+          <div>
+            <IconButton
+              label={Math.abs(exponentialMultiplier) ? 'Pause' : 'Play'}
+              kind="secondary"
+              onClick={() => {
+              if (Math.abs(exponentialMultiplier) > 0) {
+                stopTime();
+              } else {
+                handleTimeChange(30);
+              }
+            }}>
+              {Math.abs(exponentialMultiplier) > 0 ? <Pause /> : <Play />}
+            </IconButton>
+          </div>
+        </div>
     </div>
   );
 };

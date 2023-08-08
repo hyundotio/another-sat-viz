@@ -12,12 +12,10 @@
     "coverage": "nyc mocha --timeout 60000"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^6.3.0",
-    "@fortawesome/free-solid-svg-icons": "^6.3.0",
-    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@carbon/react": "^1.35.0",
     "@reduxjs/toolkit": "^1.9.2",
-    "cesium": "^1.102.0",
-    "debounce": "^1.2.1",
+    "cesium": "^1.108.0",
+    "lodash": "^4.17.21",
     "next": "^12.3.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

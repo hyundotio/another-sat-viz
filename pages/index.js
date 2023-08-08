@@ -7,28 +7,7 @@ import Layout from "@/components/shared/Layout";
 import CesiumView from "@/components/satellites/CesiumView";
 import PageLoader from "@/components/shared/PageLoader";
 
-export const getStaticProps = async () => {
-  // Get satellite launches from the last 30 days
-  const promise = new Promise((resolve) => {
-    fetch("https://celestrak.org/NORAD/elements/gp.php?GROUP=last-30-days&FORMAT=3le")
-      .then((data) => data.text())
-      .then((data) => resolve(data.split("\n")))
-      .catch((err) => {
-        console.error(err);
-        resolve(null);
-      });
-  });
-
-  const recentLaunches = await promise;
-
-  return {
-    props: {
-      recentLaunches,
-      token: process.env.CESIUM_TOKEN
-    },
-    revalidate: 3 * 60 * 60, // 3 hours in seconds
-  };
-};
+import { Theme } from "@carbon/react";
 
 const Satellites = ({ recentLaunches, token }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,19 +19,21 @@ const Satellites = ({ recentLaunches, token }) => {
   return (
     <Layout>
       <Head>
-        <title>Satellites tracker</title>
+        <title>Yet another globe with dots</title>
       </Head>
 
-      <PageLoader
-        isActive={isLoading}
-        text="Loading..."
-      />
+      <Theme theme={"g100"}>
+        <PageLoader
+          isActive={isLoading}
+          text="Loading data & creating orbits"
+        />
 
-      <CesiumView
-        token={token}
-        recentLaunches={recentLaunches}
-        setLoadingStatus={setLoadingStatus}
-      />
+        <CesiumView
+          token={token}
+          recentLaunches={recentLaunches}
+          setLoadingStatus={setLoadingStatus}
+        />
+      </Theme>
     </Layout>
   );
 };

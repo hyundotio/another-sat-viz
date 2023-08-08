@@ -1,17 +1,18 @@
 // utils
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { faCameraRotate, faArrowRotateRight, faCompress, faCircleInfo } from "@fortawesome/free-solid-svg-icons";
-import { enterFullscreen, exitFullscreen } from "@/utils/shared/screenUtils";
 import propagateObjects from "@/utils/satellites/propagateObjects";
 import { setSearchFilterValue, setShowingSearchItemsCount } from "@/store/reducers/satellitesSlice";
+import { Globe, Close, Table, SelectWindow } from '@carbon/icons-react';
 import { useDispatch } from "react-redux";
+import { throttle } from "lodash";
+import { Button, UnorderedList, ListItem } from '@carbon/react';
 
 // components and styles
-import UserGuide from "@/components/satellites/UserGuide";
 import Options from "@/components/satellites/Options";
 import TimeControls from "@/components/satellites/TimeControls";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styles from "./index.module.scss";
+import Search from "@/components/satellites/Search";
+import SelectedEntitiesList from "@/components/satellites/SelectedEntitiesList";
 
 const CesiumView = ({
   recentLaunches,
@@ -22,69 +23,75 @@ const CesiumView = ({
 
   const interpolationDegree = 7;
   const initialClockMultiplier = 0;
-
-  const viewer = useRef({}); // Cesium viewer object reference
   const startDate = useMemo(() => new Date(), []);
-  const pointPixelSize = useMemo(() => 1.8, []);
+  const viewer = useRef({}); // Cesium viewer object reference
+
 
   // categories that will have their objects hidden on load
-  const hiddenByDefault = useMemo(() => ["Other", "Debris"], []);
+  const hiddenByDefault = useMemo(() => ["Unknown", "Rocket body", "Debris"], []);
 
+  const helperFunctionsRef = useRef();
+  const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
-  const [isUserGuideVisible, setIsUserGuideVisible] = useState(true);
-  const [isNavOpen, setIsNavOpen] = useState(false);
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [fontIsLoaded, setFontIsLoaded] = useState(false);
+  const [currentTime, setCurrentTime] = useState(startDate.toISOString());
+  const [selectedEntities, setSelectedEntities] = useState([]);
+  const [isTracking, setIsTracking] = useState(false);
 
-  const setUserGuideVisibility = (value) => {
-    setIsUserGuideVisible(value);
-  };
+  const throttledSetCurrentTime = useCallback(
+    throttle(setCurrentTime, 60)
+  , []);
 
-  const handleNavToggle = () => {
-    if (isFullscreen) {
-      exitFullscreen();
-    } else {
-      enterFullscreen();
+  const resetClock = (date) => {
+    if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
+      const dateToUse = date ? date : startDate;
+      setCurrentTime(dateToUse.toISOString());
+      const start = helperFunctionsRef.current.JulianDate.fromDate(dateToUse);
+      viewer.current.clock.startTime = start.clone();
+      viewer.current.clock.currentTime = start.clone();
+      // vv Kill candidate
+      /*
+      viewer.current.entities.values.forEach((entity) => {
+        if (entity.clock) {
+          entity.clock.startTime = start.clone();
+          entity.clock.currentTime = start.clone();
+          entity.clock.shouldAnimate = false;
+        }
+      });
+      */
+      // ^^ Kill candidate
+      changePointsVisibility(null, true);
     }
-
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const handleOptionsToggle = (value) => {
-    setIsNavOpen(value);
-  };
-
-  // about page in options has been toggled
-  const handleAboutToggle = (value) => {
-    setIsAboutOpen(value);
-  };
+  }
 
   // change time flow multiplier
   const changeMultiplier = (multiplier) => {
+    // vv Kill candidate
+    /*
     viewer.current.entities.values.forEach((entity) => {
       if (entity.clock) {
         entity.clock.multiplier = multiplier;
+        entity.clock.shouldAnimate = multiplier !== 0;
       }
     });
-
+    */
+    // ^^ Kill candidate
+    viewer.current.clock.shouldAnimate = multiplier !== 0;
     viewer.current.clock.multiplier = multiplier;
   };
 
   // toggle points visibility of a specified category
-  const changePointsVisibility = (category) => {
+  const changePointsVisibility = (category, processAll) => {
     const newEntities = viewer.current.entities.values;
     for (let i = 0; i < newEntities.length; i++) {
       const entity = newEntities[i];
-
-      if (entity.categoryName === category.name) {
+      if (processAll === undefined && entity.categoryName === category.name) {
         entity.show = !entity.show;
-
-        // If timer is stopped, we need to force position recalculation
-        // because otherwise some points might stay invisible
-        if (viewer.current.clock.multiplier === 0 && entity.allPositions) {
-          entity.position = entity.allPositions.getValue(entity.clock.currentTime);
-        }
+      }
+      if (viewer.current.clock.multiplier === 0 && entity.allPositions) {
+        entity.position = entity.allPositions.getValue(viewer.current.clock.currentTime);
       }
     }
   };
@@ -104,6 +111,87 @@ const CesiumView = ({
     setObjectCategories(newCategories);
     changePointsVisibility(changedCategory);
   };
+
+  const handleSelectEntity = useCallback((pickedObject, helperFunctions) => {
+    const { Color, LabelGraphics, Cartesian2, Cartesian3, LabelStyle, VerticalOrigin } = helperFunctions;
+    // orbit path polyline
+    const polylineID = `orbit-path-${pickedObject.id.id}`;
+    if (pickedObject.id.wasSelected) {
+      const newImageUrl = pickedObject.id.billboard.image._value.replace('_selected.png','.png');
+      // Reset selected entity size and clear its orbit path and label
+      pickedObject.id.billboard.height = pickedObject.id.originalIconSize;
+      pickedObject.id.billboard.width = pickedObject.id.originalIconSize;
+      pickedObject.id.billboard.image = newImageUrl;
+      pickedObject.id.wasSelected = false;
+      pickedObject.id.label = undefined;
+      viewer.current.entities.removeById(polylineID);
+      setSelectedEntities(items => {
+        return items.filter(item => item.id !== pickedObject.id.id);
+      });
+    } else {
+      const newImageUrl = pickedObject.id.billboard.image._value.split('.png')[0] + '_selected.png';
+      pickedObject.id.wasSelected = true;
+      pickedObject.id.billboard.height = 16;
+      pickedObject.id.billboard.width = 16;
+      pickedObject.id.billboard.image = newImageUrl;
+
+      // Add label'
+      const fillColor = pickedObject.id.needsDarkText ? new Color.fromBytes(22,22,22,255) : new Color.fromBytes(244,244,244,255);
+      const bgColor = pickedObject.id.baseColor.clone();
+      pickedObject.id.label = new LabelGraphics({
+        showBackground: true,
+        fillColor: fillColor,
+        backgroundColor: bgColor,
+        backgroundPadding: new Cartesian2(14, 14),
+        text: `${pickedObject.id.name.trim()} (${pickedObject.id.satnum})`,
+        style : LabelStyle.FILL,
+        verticalOrigin : VerticalOrigin.BOTTOM,
+        pixelOffset : new Cartesian2(0, -10),
+        // Increased size and reduced scaling to improve resolution of the text
+        font : `normal 64px IBMPlexBold`,
+        scale: 0.2,
+      });
+
+      if (!pickedObject.id.allPositions) {
+        return;
+      }
+
+      // Get array of JulianDate times
+      const times = pickedObject.id.allPositions._property._times; 
+      
+      // Extract Cartesian3 positions from the SampledPositionProperty
+      const cartesianPositions = [];
+      for (let i = 0; i < times.length; i++) {
+        const cartesianPosition = new Cartesian3();
+        pickedObject.id.allPositions.getValue(times[i], cartesianPosition);
+        cartesianPositions.push(cartesianPosition);
+      }
+
+      // Add the orbit path polyline to the viewer
+      viewer.current.entities.add({
+        categoryName: pickedObject.id.categoryName,
+        id: polylineID,
+        polyline: {
+          positions: cartesianPositions,
+          width: 1,
+          material: Color.clone(pickedObject.id.baseColor),
+        },
+      });
+      setSelectedEntities(items => {
+        if (items.some(item => item.id === pickedObject.id.id)) {
+          return items
+        }
+        return [...items, {
+          id: pickedObject.id.id,
+          name: pickedObject.id.name,
+          satnum: pickedObject.id.satnum,
+          categoryName: pickedObject.id.categoryName,
+          baseColor: pickedObject.id.baseColor,
+          epochDate: pickedObject.id.epochDate
+        }]
+      });
+    }
+  }, [setSelectedEntities])
 
   // propagate objects for each category and get information about categories
   const propagateCategories = useCallback((combinedTLE, helperFunctions) => {
@@ -134,6 +222,8 @@ const CesiumView = ({
           name: category.name,
           color: category.color,
           visible: !hiddenByDefault.includes(category.name),
+          needsDarkText: category.needsDarkText,
+          isDebris: category.isDebris
         };
 
         initialObjectCategories.push({
@@ -155,6 +245,7 @@ const CesiumView = ({
   }, [hiddenByDefault, recentLaunches, startDate]);
 
   const resetCamera = () => {
+    setIsTracking(false);
     viewer.current.trackedEntity = undefined;
     viewer.current.camera.flyHome(0.6); // animation time in seconds
   };
@@ -164,44 +255,94 @@ const CesiumView = ({
     const entities = viewer.current.entities.values.slice();
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
-
       if (entity.polyline) {
         viewer.current.entities.remove(entity);
       } else if (entity.wasSelected) {
+        const newImageUrl = entity.billboard.image._value.replace('_selected.png','.png');
         // 'wasSelected' means that the point has label and increased pixel size
         entity.wasSelected = false;
-        entity.point.pixelSize = pointPixelSize;
         entity.label = undefined;
+        entity.billboard.height = entity.originalIconSize;
+        entity.billboard.width = entity.originalIconSize;
+        entity.billboard.image = newImageUrl;
       }
     }
+    setSelectedEntities([]);
   };
 
-  const selectEntity = (id) => {
-    // Start tracking the entity
-    const entity = viewer.current.entities.getById(id);
-    viewer.current.trackedEntity = entity;
+  const trackEntity = (id) => {
+    let entity;
+    if (id !== undefined) {
+      entity = viewer.current.entities.getById(id);
+      viewer.current.trackedEntity = entity;
+      setIsTracking(true);
+    } else {
+      resetCamera();
+    }
+  }
 
-    // Trigger the selectedEntityChanged event manually to show
-    // entity orbit path and label if it's not showing them yet
-    if (!entity.wasSelected) {
-      viewer.current.selectedEntityChanged.raiseEvent(viewer.current.trackedEntity);
+  const selectEntity = (id) => {
+    if (id) {
+      const entity = viewer.current.entities.getById(id);
+      // Start tracking the entity
+      viewer.current.trackedEntity = entity;
+      // Trigger the selectedEntityChanged event manually to show
+      // entity orbit path and label if it's not showing them yet
+      handleSelectEntity({id: entity}, {
+        Color: helperFunctionsRef.current.Color,
+        LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+        Cartesian2: helperFunctionsRef.current.Cartesian2,
+        Cartesian3: helperFunctionsRef.current.Cartesian3,
+        LabelStyle: helperFunctionsRef.current.LabelStyle,
+        VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+      });
     }
   };
 
   useEffect(() => {
-    if (isLoaded) {
+    //First load fonts
+    const plexFont = new FontFace('IBMPlexBold', 'url(./fonts/IBMPlexSans-Bold.woff)');
+    plexFont.load().then(function(loaded_face) {
+        document.fonts.add(loaded_face);
+        setFontIsLoaded(true);
+    }).catch(function(error) {
+      // error occurred
+    });
+  }, []);
+  
+  useEffect(() => {
+    if (selectedEntities.length === 0) setIsSelectedEntitiesListOpen(false);
+  }, [selectedEntities])
+
+  useEffect(() => {
+    //Do not re-render via React if loaded OR if font is not loaded.
+    if (isLoaded || !fontIsLoaded) {
       return;
     }
-
     const combinedTLE = import("@/utils/satellites/combinedTLE");
     const Cesium = import("@/cesiumSource/Cesium");
 
     Promise.all([Cesium, combinedTLE]).then((values) => {
+
       setIsLoaded(true);
 
       // destructure imported modules
       const { ...Cesium } = values[0];
       const { default: combinedTLE } = values[1];
+
+      // refs for helper functions
+      helperFunctionsRef.current = {
+        Color: Cesium.Color,
+        ClockRange: Cesium.ClockRange,
+        LabelGraphics: Cesium.LabelGraphics,
+        Cartesian2: Cesium.Cartesian2,
+        Cartesian3: Cesium.Cartesian3,
+        LabelStyle: Cesium.LabelStyle,
+        VerticalOrigin: Cesium.VerticalOrigin,
+        SampledPositionProperty: Cesium.SampledPositionProperty,
+        JulianDate: Cesium.JulianDate,
+        Cartographic: Cesium.Cartographic
+      }
 
       Cesium.Ion.defaultAccessToken = token;
 
@@ -224,44 +365,74 @@ const CesiumView = ({
         maximumScreenSpaceError: 128
       });
 
+      const mapboxLayer = new Cesium.UrlTemplateImageryProvider({
+        url : 'https://api.mapbox.com/styles/v1/hyunkseo91/clkvncy1c009d01qp23rsdf04/tiles/256/%7Bz%7D/%7Bx%7D/%7By%7D@2x?access_token=pk.eyJ1IjoiaHl1bmtzZW85MSIsImEiOiJjazgwZTFhZ2MwNHJ0M25xaG1hMTZhbGwxIn0.IgzUxjwNb1-3gEkVT2pF_Q',
+     });
+
       // set world imagery
       viewer.current.imageryLayers.addImageryProvider(
-        new Cesium.IonImageryProvider({ assetId: 3845 })
+        mapboxLayer
       );
 
       // add settings for Cesium
       const start = Cesium.JulianDate.fromDate(startDate);
-      
       viewer.current.clock.startTime = start.clone();
       viewer.current.clock.currentTime = start.clone();
-      viewer.current.clock.canAnimate = false;
+      viewer.current.clock.canAnimate = true;
       viewer.current.clock.shouldAnimate = false;
       viewer.current.clock.multiplier = initialClockMultiplier;
       viewer.current.clock.clockStep = Cesium.ClockRange.TICK_DEPENDENT;
-      viewer.current.resolutionScale = 0.8;
       viewer.current.scene.screenSpaceCameraController.minimumZoomDistance = 4e6; // max zoom-in distance in meters
       viewer.current.scene.screenSpaceCameraController.maximumZoomDistance = 0.5e9; // max zoom-out distance in meters
       viewer.current.scene.globe.depthTestAgainstTerrain = true; // Make things behind terrain disappear
+      viewer.current.scene.globe.atmosphereBrightnessShift = -0.3;
+      viewer.current.scene.globe.atmosphereLightIntensity = 10;
+      viewer.current.scene.globe.enableLighting = true;
+      viewer.current.scene.skyBox.destroy();
+      viewer.current.scene.skyBox = undefined;
+      viewer.current.scene.sun.destroy();
+      viewer.current.scene.sun = undefined;
 
       // Calculate position from TLE data
       const {propagatedCategories, initialObjectCategories} = propagateCategories(combinedTLE, {
-        SampledPositionProperty: Cesium.SampledPositionProperty,
-        JulianDate: Cesium.JulianDate,
-        Cartesian3: Cesium.Cartesian3,
+        SampledPositionProperty: helperFunctionsRef.current.SampledPositionProperty,
+        JulianDate: helperFunctionsRef.current.JulianDate,
+        Cartesian3: helperFunctionsRef.current.Cartesian3,
+        Cartographic: helperFunctionsRef.current.Cartographic
       });
 
       // Create entities for each object
       const points = [];
       propagatedCategories.forEach((category) => {
-        category.data.forEach(({position, orbitDuration, name, epochDate, satnum}, i) => {
+        category.data.forEach(({position, orbitDuration, name, epochDate, satnum, orbitType, isManned}, i) => {
+          let iconSize = 6.5;
+          let iconUrl = './Assets/Models/circle';
+          if (orbitType === 1) {
+            iconSize = 20;
+            iconUrl = './Assets/Models/triangle';
+          }
+          if (orbitType === 2) {
+            iconSize = 16;
+            iconUrl = './Assets/Models/cross';
+          }
+          iconUrl = iconUrl + (category.isDebris ? '_debris.png' : '.png');
+          if (isManned) {
+            iconUrl = './Assets/Models/manned.png';
+            iconSize = 24;
+          }
+
           const entity = viewer.current.entities.add({
             id: `${category.name}-${satnum}-${i}`,
             epochDate,
             allPositions: position,
             position,
-            point: {
-              color: category.color,
-              pixelSize: pointPixelSize,
+            baseColor: category.color ? category.color : new Cesium.Color.fromBytes(15,98,254,255),
+            needsDarkText: category.needsDarkText,
+            originalIconSize: iconSize,
+            billboard: {
+              image: iconUrl,
+              height: iconSize,
+              width: iconSize,
               scaleByDistance: new Cesium.NearFarScalar(2e7, 1.9, 9e7, 1),
               translucencyByDistance: new Cesium.NearFarScalar(2e7, 1, 9e7, 0.8),
             },
@@ -276,113 +447,56 @@ const CesiumView = ({
             interpolationAlgorithm: Cesium.LagrangePolynomialApproximation,
           });
 
-          // Set the entity's clock settings to control how time progresses for the object
-          entity.clock = new Cesium.Clock({
-            startTime: start.clone(),
-            currentTime: start.clone(),
-            stopTime: Cesium.JulianDate.addMinutes(start.clone(), orbitDuration, new Cesium.JulianDate()),
-            multiplier: initialClockMultiplier,
-            clockStep: Cesium.ClockRange.TICK_DEPENDENT,
-            shouldAnimate: true,
-            canAnimate: true,
-          });
-
           points.push(entity);
         });
       });
 
-      // Handle clocks for each object individually
+      // Animate
       viewer.current.clock.onTick.addEventListener((clock) => {
         if (clock.multiplier === 0) {
           return;
         }
 
+        throttledSetCurrentTime(Cesium.JulianDate.toDate(clock.currentTime).toISOString());
         // Update positions and clocks of each entity separately
-        points.forEach((entity) => {
+        const pointsLen = points.length;
+
+        if (Math.abs(Cesium.JulianDate.toDate(clock.currentTime).getTime() - Cesium.JulianDate.toDate(clock.startTime).getTime()) > 4800000) {
+          //Current limit is 80 min propagation
+          //Restarts after 80 min
+          viewer.current.clock.currentTime = viewer.current.clock.startTime.clone();
+        }
+
+        for (let i = 0; i < pointsLen; i++) {
+          const entity = points[i];
           if (entity.isShowing) {
-            entity.clock.tick(); // Advance entity clock
-
-            if (Cesium.JulianDate.compare(entity.clock.stopTime, entity.clock.currentTime) < 0) {
-              // If reached the stop time, reset the clock to start over
-              entity.clock.currentTime = entity.clock.startTime.clone();
-            } else if (Cesium.JulianDate.compare(entity.clock.startTime, entity.clock.currentTime) > 0) {
-              // If going backwards, when startTime is hit, set time to stopTime so that a loop would be made
-              entity.clock.currentTime = entity.clock.stopTime.clone();
-            }
-
             if (entity.allPositions) {
-              entity.position = entity.allPositions.getValue(entity.clock.currentTime);
+              entity.position = entity.allPositions.getValue(viewer.current.clock.currentTime);
             }
-          }
-        });
-      });
-
-      // Show or hide orbit paths and labels for items when selecting them
-      viewer.current.selectedEntityChanged.addEventListener((selectedEntity) => {
-        if (Cesium.defined(selectedEntity) && Cesium.defined(selectedEntity.name)) {
-          // orbit path polyline
-          const polylineID = `orbit-path-${selectedEntity.id}`;
-
-          if (selectedEntity.wasSelected) {
-            // Reset selected entity size and clear its orbit path and label
-            selectedEntity.wasSelected = false;
-            selectedEntity.point.pixelSize = pointPixelSize;
-            selectedEntity.label = undefined;
-            viewer.current.entities.removeById(polylineID);
-          } else {
-            selectedEntity.wasSelected = true;
-            selectedEntity.point.pixelSize = 5;
-
-            // Add label
-            selectedEntity.label = new Cesium.LabelGraphics({
-              text: `${selectedEntity.name.trim()} (${selectedEntity.satnum})`,
-              style : Cesium.LabelStyle.FILL_AND_OUTLINE,
-              verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
-              pixelOffset : new Cesium.Cartesian2(0, -10),
-              // Increased size and reduced scaling to improve resolution of the text
-              font : "57px Helvetica",
-              scale: 0.3,
-            });
-
-            if (!selectedEntity.allPositions) {
-              return;
-            }
-
-            // Get array of JulianDate times
-            const times = selectedEntity.allPositions._property._times; 
-            
-            // Extract Cartesian3 positions from the SampledPositionProperty
-            const cartesianPositions = [];
-            for (let i = 0; i < times.length; i++) {
-              const cartesianPosition = new Cesium.Cartesian3();
-              selectedEntity.allPositions.getValue(times[i], cartesianPosition);
-              cartesianPositions.push(cartesianPosition);
-            }
-
-            // Add the orbit path polyline to the viewer
-            viewer.current.entities.add({
-              categoryName: selectedEntity.categoryName,
-              id: polylineID,
-              polyline: {
-                positions: cartesianPositions,
-                width: 1,
-                material: Cesium.Color.clone(selectedEntity.point.color.getValue()),
-              },
-            });
           }
         }
       });
 
+      // Remove double clicker
+      viewer.current.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
       // Create a screen space event handler to handle click events on the canvas
       const handler = new Cesium.ScreenSpaceEventHandler(viewer.current.scene.canvas);
+      
       handler.setInputAction((click) => {
         const pickedObject = viewer.current.scene.pick(click.position);
-
         // If the clicked object is a polyline, remove it
-        if (Cesium.defined(pickedObject)
-          && Cesium.defined(pickedObject.id)
-          && Cesium.defined(pickedObject.id.polyline)) {
-          viewer.current.entities.remove(pickedObject.id);
+        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+          if (Cesium.defined(pickedObject.id.name)) {
+            handleSelectEntity(pickedObject, {
+              Color: helperFunctionsRef.current.Color,
+              LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+              Cartesian2: helperFunctionsRef.current.Cartesian2,
+              Cartesian3: helperFunctionsRef.current.Cartesian3,
+              LabelStyle: helperFunctionsRef.current.LabelStyle,
+              VerticalOrigin: helperFunctionsRef.current.VerticalOrigin
+            });
+          }
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
@@ -396,7 +510,7 @@ const CesiumView = ({
 
       // Start animation
       viewer.current.clock.canAnimate = true;
-      viewer.current.clock.shouldAnimate = true;
+      viewer.current.clock.shouldAnimate = initialClockMultiplier !== 0;
 
       setObjectCategories(initialObjectCategories);
 
@@ -408,93 +522,129 @@ const CesiumView = ({
       dispatch(setSearchFilterValue(""));
       dispatch(setShowingSearchItemsCount(100));
     };
-  }, [dispatch, isLoaded, pointPixelSize, propagateCategories, setLoadingStatus, startDate, token]);
+  }, [dispatch, isLoaded, propagateCategories, setLoadingStatus, startDate, token, fontIsLoaded]);
 
   return (
     <>
-      {
-        isUserGuideVisible && <UserGuide hideUserGuide={() => setUserGuideVisibility(false)} />
-      }
-
-      <Options
-        objectCategories={objectCategories}
-        toggleCategoryVisibility={toggleCategoryVisibility}
-        handleOptionsToggle={handleOptionsToggle}
-        handleAboutToggle={handleAboutToggle}
-        selectEntity={selectEntity}
-        entities={!viewer.current?.entities?.values?.length
-          ? []
-          : viewer.current.entities.values
-            .filter((entity) => entity.point)
-            .map((entity) => ({
-              id: entity.id,
-              name: entity.name.toLowerCase(),
-              categoryName: entity.categoryName.toLowerCase(),
-              satnum: entity.satnum,
-              epochDate: entity.epochDate,
-              visible: entity.isShowing
-            }))
-        }
-      />
-
-      <TimeControls
-        handleMultiplierChange={changeMultiplier}
-        isNavOpen={isNavOpen}
-        isAboutOpen={isAboutOpen}
-      />
-
-      {
-        !isNavOpen && !isAboutOpen &&
-          <div className={styles["utils"]}
-          >
-            <button
-              onClick={resetCamera}
-              title="Reset camera view"
-            >
-              <FontAwesomeIcon
-                icon={faCameraRotate}
-                className={styles["icon"]}
-              />
-            </button>
-            <button
-              onClick={clearExtraEntities}
-              title="Clear extra entities"
-            >
-              <FontAwesomeIcon
-                icon={faArrowRotateRight}
-                className={styles["icon"]}
-              />
-            </button>
-            <button 
-              onClick={handleNavToggle}
-              title="Toggle fullscreen mode"
-            >
-              <FontAwesomeIcon
-                icon={faCompress}
-                className={styles["icon"]}
-              />
-            </button>
-            <button
-              onClick={() => setUserGuideVisibility(true)}
-              title="User guide"
-            >
-              <FontAwesomeIcon
-                icon={faCircleInfo}
-                className={styles["icon"]}
-              />
-            </button>
+      <div className={styles['left-sidebar-container']}>
+        <div className={styles['left-sidebar-contents']}>
+          <TimeControls
+            handleMultiplierChange={changeMultiplier}
+            currentTime={currentTime}
+            resetClock={resetClock}
+            startDate={startDate}
+          />
+          <Options
+            objectCategories={objectCategories}
+            toggleCategoryVisibility={toggleCategoryVisibility}
+          />
+          <div className={styles['details-container']}>
+            <label className="cds--label">Color legend</label>
+            <UnorderedList className={styles['legend-container']}>
+              <ListItem className={styles['legend-list-item']}>
+                <img src="./Assets/Models/square.png" alt="Legend item for Active" /> Active objects
+              </ListItem>
+              <ListItem className={styles['legend-list-item']}>
+                <img src="./Assets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
+              </ListItem>
+            </UnorderedList>
           </div>
-      }
+          <div className={styles['details-container']}>
+            <label className="cds--label">Shape legend</label>
+            <UnorderedList className={styles['legend-container']}>
+              <ListItem className={styles['legend-list-item']}>
+                <img src="./Assets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
+              </ListItem>
+              <ListItem className={styles['legend-list-item']}>
+                <img src="./Assets/Models/triangle.png" alt="Legend item for MEO" /> {`Middle earth orbit (MEO)`}
+              </ListItem>
+              <ListItem className={styles['legend-list-item']}>
+                <img src="./Assets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
+              </ListItem>
+            </UnorderedList>
+          </div>
+          <div className={styles['details-container']}>
+            <label className="cds--label">Details</label>
+            <UnorderedList>
+              <ListItem>
+                Data source: Space-Track general perbutation (GP) TLEs
+              </ListItem>
+              <ListItem>
+                Orbits propagated via TLE SPG4 method with satellite.js
+              </ListItem>
+              <ListItem>
+                Data source updated at: {'not yet implemented'}
+              </ListItem>
+            </UnorderedList>
+          </div>
+        </div>
+      </div>
 
       <main className={styles["content"]}>
         <div
           id="cesium-container"
           className={`
             fullSize
-            ${isNavOpen ? "nav-open" : ""}
-            ${isAboutOpen ? "about-open" : ""}
           `}
         ></div>
+        <div className={styles['search-button-container']}>
+          <Button
+            label={isSearchOpen ? 'Close data table' : 'Open data table'}
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            kind="secondary"
+            renderIcon={isSearchOpen ? Close : Table}
+          >
+            {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
+          </Button>
+        </div>
+        <div className={`${styles['search-container']} ${isSearchOpen ? styles['search-active'] : null}`}>
+          <Search
+            entities={!viewer.current?.entities?.values?.length
+              ? []
+              : viewer.current.entities.values
+                .filter((entity) => entity.billboard)
+                .map((entity) => ({
+                  id: entity.id,
+                  name: entity.name.toLowerCase(),
+                  categoryName: entity.categoryName.toLowerCase(),
+                  satnum: entity.satnum,
+                  epochDate: entity.epochDate,
+                  visible: entity.isShowing
+                }))
+            }
+            trackEntity={trackEntity}
+            selectedEntities={selectedEntities}
+            selectEntity={selectEntity}
+            setIsSearchOpen={setIsSearchOpen}
+          />
+        </div>
+        
+        <div className={styles['selected-entities-button-container']}>
+          {
+            selectedEntities.length ?
+              <div>
+              <Button
+                label="Clear selection"
+                onClick={() => setIsSelectedEntitiesListOpen(v => !v)}
+                kind="secondary"
+                renderIcon={isSelectedEntitiesListOpen ? Close : SelectWindow}
+              >
+                {isSelectedEntitiesListOpen ? 'Close Selection controls' : 'Open Selection controls'}
+              </Button></div> : null
+          }
+          {
+            isTracking ? 
+            <div><Button label="Reset camera view" onClick={resetCamera} kind="secondary" renderIcon={Globe}>Reset camera</Button></div> : null
+          }
+        </div>
+        <div className={`${styles['selected-entities-container']} ${isSelectedEntitiesListOpen ? styles['selected-entities-list-active'] : null}`}>
+          <SelectedEntitiesList
+              selectedEntities={selectedEntities}
+              clearExtraEntities={clearExtraEntities}
+              trackEntity={trackEntity}
+          />
+        </div>
+        
       </main>
     </>
   );

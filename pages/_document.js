@@ -11,52 +11,31 @@ class AppDocument extends Document {
       <Html lang="en">
         <Head>
           <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap"
-            rel="stylesheet" />
-          <meta name="title" content="Front-end developer Deimantas Butėnas" />
+          <meta name="title" content="Yet another globe with space dots" />
           <meta
             name="description"
-            content="Portfolio website of a front-end developer Deimantas Butėnas."
+            content="Yet another browser-based 3d visualization of space objects."
           />
           <meta
             name="keywords"
-            content="deimantas butėnas, deimantas butenas, web development, frontend, front-end,
-              front end, front end development, front end developer, portfolio, design, web design,
-              react, vue, javascript, typescript, js, ts, html, css, scss, sass, git, aws"
+            content="ssa, sda, dots, space, spess, sats"
           />
-          <link rel="canonical" href="https://www.deimantasb.com/" />
-
           <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://www.deimantasb.com/" />
           <meta
             property="og:title"
-            content="Front-end developer Deimantas Butėnas"
+            content="Yet another globe with space dots"
           />
           <meta
             property="og:description"
-            content="Portfolio website of a front-end developer Deimantas Butėnas where you can see his work!"
+            content="Yet another browser-based 3d visualization of space objects."
           />
-          <meta
-            property="og:image"
-            content="https://www.deimantasb.com/meta-image.png"
-          />
-
-          <meta property="twitter:card" content="summary_large_image" />
-          <meta property="twitter:url" content="https://www.deimantasb.com/" />
           <meta
             property="twitter:title"
-            content="Front-end developer Deimantas Butėnas"
+            content="Yet another globe with space dots"
           />
           <meta
             property="twitter:description"
-            content="Portfolio website of a front-end developer Deimantas Butėnas where you can see his work!"
-          />
-          <meta
-            property="twitter:image"
-            content="https://www.deimantasb.com/meta-image.png"
+            content="Yet another browser-based 3d visualization of space objects."
           />
         </Head>
         <body>

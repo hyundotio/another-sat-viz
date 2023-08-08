@@ -6,7 +6,7 @@ body {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
-  font-family: 'Roboto Slab', serif;
+  font-family: 'IBM Plex Sans', serif;
   width: 100%;
   height: 100%;
 }
@@ -24,7 +24,18 @@ button,
 input,
 label {
   border: 0;
-  font-family: 'Roboto Slab', serif;
+  font-family: 'IBM Plex Sans', serif;
   cursor: pointer;
 }
 
+//fix
+.cds--data-table--xs thead tr th[aria-sort] {
+  height: 1.5rem;
+  .cds--table-sort__flex {
+    min-height: 1.5rem;
+  }
+}
+
+button.cds--link {
+  background-color: transparent;
+}

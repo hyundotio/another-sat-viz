@@ -8,12 +8,10 @@
 	left: 0;
 	height: 100vh;
 	width: 100%;
-	z-index: 99999;
+	z-index: 101;
+	flex-direction: column;
 
 	.loader-text {
-		color: white;
-		font-size: 17px;
-		position: relative;
-		bottom: -110px;
+		margin-top: 2rem;
 	}
 }

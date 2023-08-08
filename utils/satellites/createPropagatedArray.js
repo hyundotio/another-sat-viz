@@ -95,37 +95,38 @@ const julianToDate = (julianDate) => {
 
 // Propagate an array of satrecs with provided time
 const createPropagatedArray = (satrecs, startDate, interpolationDegree, helperFunctions) => {
-  const { SampledPositionProperty, JulianDate, Cartesian3 } = helperFunctions;
+  const { SampledPositionProperty, JulianDate, Cartesian3, Cartographic } = helperFunctions;
   const results = [];
   const time = new Date(startDate); // create date copy to not modify the original date
   const startTime = time.getTime();
-  const objPositions = null;
-  let orbitDuration = 0;
 
   satrecs.forEach(({ record, name }) => {
-    objPositions = null;
+    let objPositions = null;
     time.setTime(startTime);
     let propagated = propagateObject(record, time);
+    let altitude = 0;
 
     // Sometimes propagated data is invalid, so check for validity before continuing
     if (isPropagatedObjectValid(propagated)) {
       let periodMinutes = orbitalPeriod(propagated.position, propagated.velocity);
 
       if (!isNaN(periodMinutes)) {
-        orbitDuration = periodMinutes.toFixed(1); // We don't need exact precision
-        const pointsCount = getPointsCountForOrbit(orbitDuration, interpolationDegree);
+        periodMinutes = Math.round(periodMinutes);
+        const pointsCount = getPointsCountForOrbit(periodMinutes, interpolationDegree);
         const times = [];
         const positions = [];
 
         // first point
         times.push(JulianDate.fromDate(time));
         let coords = getFormattedCoordinates(propagated.position);
+        const cartographic = Cartographic.fromCartesian(coords);
+        altitude = Math.round(cartographic.height / 1000);
         positions.push(new Cartesian3(coords.x, coords.y, coords.z));
 
         // calculate all required following points after the first one
         let errors = false;
         let periodsSum = 0;
-        const minutesBetweenPoints = orbitDuration / (pointsCount - 1);
+        const minutesBetweenPoints = periodMinutes / (pointsCount - 1);
 
         for (let i = 1; i < pointsCount; i++) {
           time.setTime(startTime + (i * minutesBetweenPoints * 60 * 1000));
@@ -176,10 +177,19 @@ const createPropagatedArray = (satrecs, startDate, interpolationDegree, helperFu
     }
 
     if (objPositions) {
+      let orbitType = 0;
+      if (altitude > 2000) {
+        orbitType = 1;
+        if (altitude > 35786) {
+          orbitType = 2;
+        }
+      }
+
       results.push({
         position: objPositions,
-        orbitDuration,
+        orbitType,
         name,
+        isManned: record.satnum === '48274' || record.satnum === '25544',
         epochDate: julianToDate(record.jdsatepoch),
         satnum: record.satnum
       });

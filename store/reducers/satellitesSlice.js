@@ -4,6 +4,7 @@ export const satellitesSlice = createSlice({
   name: "satellites",
   initialState: {
     searchFilterValue: "",
+    searchFilterValue2: "",
     showingSearchItemsCount: 100,
   },
   reducers: {
@@ -11,6 +12,12 @@ export const satellitesSlice = createSlice({
       return {
         ...state,
         searchFilterValue: payload,
+      };
+    },
+    setSearchFilterValue2: (state, { payload }) => {
+      return {
+        ...state,
+        searchFilterValue2: payload,
       };
     },
     setShowingSearchItemsCount: (state, { payload }) => {
@@ -22,5 +29,5 @@ export const satellitesSlice = createSlice({
   },
 });
 
-export const { setSearchFilterValue, setShowingSearchItemsCount } = satellitesSlice.actions;
+export const { setSearchFilterValue, setSearchFilterValue2, setShowingSearchItemsCount } = satellitesSlice.actions;
 export default satellitesSlice.reducer;
