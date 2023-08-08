@@ -145,7 +145,7 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
                   kind="secondary"
                   renderIcon={Reset}
                 >
-                  Clear selection & orbits
+                  Unselect all
                 </Button>
               </TableToolbarContent>
             </TableToolbar>
