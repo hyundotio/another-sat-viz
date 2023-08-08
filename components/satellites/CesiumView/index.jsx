@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import propagateObjects from "@/utils/satellites/propagateObjects";
 import { Globe, Close, Table, SelectWindow } from '@carbon/icons-react';
 import { throttle } from "lodash";
-import { Button, UnorderedList, ListItem } from '@carbon/react';
+import { Button, UnorderedList, ListItem, ToastNotification } from '@carbon/react';
 
 // components and styles
 import Options from "@/components/satellites/Options";
@@ -31,6 +31,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [currentTime, setCurrentTime] = useState(startDate.toISOString());
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [isTracking, setIsTracking] = useState(false);
+  const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
 
   const throttledSetCurrentTime = useCallback(
     throttle(setCurrentTime, 60)
@@ -244,11 +245,17 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const trackEntity = (id) => {
     //Function is used to camera track an entity
-    let entity;
     if (id !== undefined) {
-      entity = viewer.current.entities.getById(id);
-      viewer.current.trackedEntity = entity;
-      setIsTracking(true);
+      const entity = viewer.current.entities.getById(id);
+      if (entity.show) {
+        viewer.current.trackedEntity = entity;
+        setIsTracking(true);
+      } else {
+        setFailMessage({ catname: entity.categoryName, satnum: entity.satnum });
+        //entity is not visible. let user know?
+        //entity.category
+      }
+      
     } else {
       resetCamera();
     }
@@ -258,18 +265,25 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     //Function is used to select an entity or unselect.
     if (id) {
       const entity = viewer.current.entities.getById(id);
-      // Start tracking the entity
-      viewer.current.trackedEntity = entity;
-      // Trigger the selectedEntityChanged event manually to show
-      // entity orbit path and label if it's not showing them yet
-      handleSelectEntity({id: entity}, {
-        Color: helperFunctionsRef.current.Color,
-        LabelGraphics: helperFunctionsRef.current.LabelGraphics,
-        Cartesian2: helperFunctionsRef.current.Cartesian2,
-        Cartesian3: helperFunctionsRef.current.Cartesian3,
-        LabelStyle: helperFunctionsRef.current.LabelStyle,
-        VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
-      });
+      if (entity.show) { 
+        // Start tracking the entity
+        viewer.current.trackedEntity = entity;
+        // Trigger the selectedEntityChanged event manually to show
+        // entity orbit path and label if it's not showing them yet
+        handleSelectEntity({id: entity}, {
+          Color: helperFunctionsRef.current.Color,
+          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+          Cartesian2: helperFunctionsRef.current.Cartesian2,
+          Cartesian3: helperFunctionsRef.current.Cartesian3,
+          LabelStyle: helperFunctionsRef.current.LabelStyle,
+          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+        });
+      } else {
+        setFailMessage({ catname: entity.categoryName, satnum: entity.satnum });
+        //entity is not visible. let user know?
+        //entity.category
+      }
+      
     }
   };
 
@@ -619,7 +633,17 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                   trackEntity={trackEntity}
               />
           </div>
-          
+          <div className={styles['notification-container']}>
+            {
+              failMessage.catname && failMessage.satnum ? 
+              <ToastNotification
+                lowContrast
+                subtitle={<span>Enable {failMessage.catname} in "Visible object types" to track and select {failMessage.satnum}</span>}
+                timeout={6000}
+                title="Unable to track & select"
+              /> : null
+            }
+          </div>
         </main>
       </>
       
