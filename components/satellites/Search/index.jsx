@@ -189,18 +189,18 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
                         if (cell && cell.info && cell.info.header && cell.info.header === 'focus_id') {
                           return  <TableCell key={cell.id}>
                                     <button className="cds--link" onClick={() => {
-                                      if (cell.value.selected) {
-                                        trackEntity(undefined);
+                                      if (!cell.value.selected) {
+                                        selectEntity(cell.value.id);
                                       } else {
-                                        setIsSearchOpen(false);
+                                        trackEntity(cell.value.id);
                                       }
-                                      selectEntity(cell.value.id);
+                                      setIsSearchOpen(false);
                                     }}>
-                                      {cell.value.selected ? 'Unselect object' : 'Track and select object'}
+                                      Track and select object
                                     </button>
                                   </TableCell>
                         }
-                        return <TableCell key={cell.id}>{cell.value}</TableCell>
+                        return <TableCell key={cell.id}>{cell.value.toUpperCase()}</TableCell>
                       })
                     }
                   </TableRow> : null

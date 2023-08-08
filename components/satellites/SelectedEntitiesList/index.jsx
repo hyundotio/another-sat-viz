@@ -23,7 +23,7 @@ const getUTCDate = require("@/utils/shared/getUTCDate");
 // components and styles
 import styles from "./index.module.scss";
 
-const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntities }) => {
+const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntities, unselectEntities }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchFilterValue, setSearchFilterValue] = useState("");
@@ -74,7 +74,11 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
     },
     {
       header: 'Track object',
-      key: 'focus_id'
+      key: 'focus'
+    },
+    {
+      header: 'Unselect',
+      key: 'unselect'
     }
   ];
   
@@ -97,7 +101,11 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
           norad_id: entity.satnum,
           object_type: entity.categoryName,
           tle_epoch: getUTCDate(entity.epochDate),
-          focus_id: {
+          focus: {
+            id: entity.id,
+            selected: selectedEntities.some(ent => ent.id === entity.id)
+          },
+          unselect: {
             id: entity.id,
             selected: selectedEntities.some(ent => ent.id === entity.id)
           },
@@ -146,7 +154,7 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
                 <TableRow>
                   {headers.map((header) => {
                     return (
-                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus_id'})}>
+                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus'})}>
                         {header.header}
                       </TableHeader>
                     )
@@ -159,14 +167,25 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
                   <TableRow key={row.id}>
                     {
                       row.cells.map((cell) => {
-                        if (cell && cell.info && cell.info.header && cell.info.header === 'focus_id') {
-                          return  <TableCell key={cell.id}>
+                        if (cell && cell.info && cell.info.header) {
+                          if (cell.info.header === 'focus') {
+                            return  <TableCell key={cell.id}>
                                     <button className="cds--link" onClick={() => {trackEntity(cell.value.id);}}>
                                       Track object
                                     </button>
                                   </TableCell>
+                          }
+                          if (cell.info.header === 'unselect') {
+                            return  <TableCell key={cell.id}>
+                                    <button className="cds--link" onClick={() => {
+                                      unselectEntities(selectedEntities.filter(en => en.id === cell.value.id));
+                                    }}>
+                                      Unselect
+                                    </button>
+                                  </TableCell>
+                          }
                         }
-                        return <TableCell key={cell.id}>{cell.value}</TableCell>
+                        return <TableCell key={cell.id}>{cell.value.toUpperCase()}</TableCell>
                       })
                     }
                   </TableRow> : null
