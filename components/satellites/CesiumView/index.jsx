@@ -18,6 +18,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const initialClockMultiplier = 0;
   const startDate = useMemo(() => new Date(), []);
   const viewer = useRef({}); // Cesium viewer object reference
+  const notificationTimerID = useRef();
 
   // categories that will have their objects hidden on load
   const hiddenByDefault = useMemo(() => ["Unknown", "Rocket body", "Debris"], []);
@@ -30,7 +31,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [fontIsLoaded, setFontIsLoaded] = useState(false);
   const [currentTime, setCurrentTime] = useState(startDate.toISOString());
   const [selectedEntities, setSelectedEntities] = useState([]);
-  const [isTracking, setIsTracking] = useState(false);
+  const [isTracking, setIsTracking] = useState('');
   const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
 
   const throttledSetCurrentTime = useCallback(
@@ -237,7 +238,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const resetCamera = () => {
     //Reset camera to untrack
-    setIsTracking(false);
+    setIsTracking('');
     viewer.current.trackedEntity = undefined;
     viewer.current.camera.flyHome(0.6); // animation time in seconds
   };
@@ -268,7 +269,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       const entity = viewer.current.entities.getById(id);
       if (entity.show) {
         viewer.current.trackedEntity = entity;
-        setIsTracking(true);
+        setIsTracking(id);
       } else {
         setFailMessage({ catname: entity.categoryName, satnum: entity.satnum });
         //entity is not visible. let user know?
@@ -287,7 +288,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       if (entity.show) { 
         // Start tracking the entity
         viewer.current.trackedEntity = entity;
-        setIsTracking(true);
+        setIsTracking(id);
         // Trigger the selectedEntityChanged event manually to show
         // entity orbit path and label if it's not showing them yet
         handleSelectEntity({id: entity}, {
@@ -316,7 +317,19 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     }).catch(function(error) {
       // error occurred
     });
+
+    return () => {
+      clearTimeout(notificationTimerID.current);
+    }
   }, []);
+
+  useEffect(() => {
+    if (failMessage.catname && failMessage.satnum) {
+      notificationTimerID.current = setTimeout(() => {
+        setFailMessage({catname: '', satnum: ''});
+      }, 6000);
+    }
+  }, [failMessage])
   
   useEffect(() => {
     if (selectedEntities.length === 0) setIsSelectedEntitiesListOpen(false);
@@ -660,9 +673,16 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           </div>
           <div className={`${styles['selected-entities-container']} ${isSelectedEntitiesListOpen ? styles['selected-entities-list-active'] : null}`}>
               <SelectedEntitiesList
-                  selectedEntities={selectedEntities}
+                  selectedEntities={selectedEntities.map(sE => {
+                    return {
+                      ...sE,
+                      categoryName: sE.categoryName.toLowerCase(),
+                      name: sE.name.toLowerCase()
+                    }
+                  })}
                   unselectEntities={(entities) => {
                     //This is to handle Unselect from table.
+                    let shouldUntrack = false;
                     entities.forEach(ent => {
                       const entity = viewer.current.entities.getById(ent.id);
                       handleSelectEntity({id: entity}, {
@@ -673,7 +693,11 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                         LabelStyle: helperFunctionsRef.current.LabelStyle,
                         VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
                       });
+                      if (ent.id === isTracking) {
+                        shouldUntrack = true;
+                      }
                     })
+                    if (shouldUntrack) trackEntity(undefined);
                   }}
                   clearExtraEntities={clearExtraEntities}
                   trackEntity={trackEntity}
@@ -684,8 +708,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               failMessage.catname && failMessage.satnum ? 
               <ToastNotification
                 lowContrast
-                subtitle={<span>{`Enable ${failMessage.catname} in "Visible object types" to track and select ${failMessage.satnum}`}</span>}
-                timeout={6000}
+                subtitle={`Enable ${failMessage.catname} in "Visible object types" to track and select ${failMessage.satnum}`}
+                timeout={0}
                 title="Unable to track & select"
               /> : null
             }

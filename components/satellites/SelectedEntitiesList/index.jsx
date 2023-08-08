@@ -185,7 +185,7 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
                                   </TableCell>
                           }
                         }
-                        return <TableCell key={cell.id}>{cell.value}</TableCell>
+                        return <TableCell key={cell.id}>{cell.value.toUpperCase()}</TableCell>
                       })
                     }
                   </TableRow> : null
