@@ -80,6 +80,25 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       }
     });
 
+    const newSelectedEntities = [];
+
+    selectedEntities.forEach((selectedEntity) => {
+      if (newCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase())) {
+        newSelectedEntities.push(selectedEntity);
+      } else {
+        const entity = viewer.current.entities.getById(selectedEntity.id);
+        handleSelectEntity({id: entity}, {
+          Color: helperFunctionsRef.current.Color,
+          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+          Cartesian2: helperFunctionsRef.current.Cartesian2,
+          Cartesian3: helperFunctionsRef.current.Cartesian3,
+          LabelStyle: helperFunctionsRef.current.LabelStyle,
+          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+        });
+      }
+    });
+
+    setSelectedEntities(newSelectedEntities);
     setObjectCategories(newCategories);
     changePointsVisibility(changedCategory);
   };
