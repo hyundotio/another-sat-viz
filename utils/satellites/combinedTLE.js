@@ -10,7 +10,7 @@ const debris = {
   name: "Debris",
   color: debrisColor,
   data: [],
-  isDebris: true,
+  kind: "DEBRIS",
   needsDarkText: true
 };
 
@@ -18,7 +18,7 @@ const rocketBody = {
   name: "Rocket body",
   color: debrisColor,
   data: [],
-  isDebris: true,
+  kind: "DEBRIS",
   needsDarkText: true
 };
 
@@ -26,13 +26,14 @@ const unknown = {
   name: "Uncategorized",
   color: unknownColor,
   data: [],
-  isDebris: true,
+  kind: "UNCATEGORIZED",
   needsDarkText: true
 };
 
 const payload = {
   name: "Payload",
   color: payloadColor,
+  kind: "PAYLOAD",
   data: []
 };
 
