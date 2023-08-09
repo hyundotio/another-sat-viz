@@ -413,8 +413,16 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       viewer.current.scene.globe.atmosphereBrightnessShift = -0.3;
       viewer.current.scene.globe.atmosphereLightIntensity = 10;
       viewer.current.scene.globe.enableLighting = true;
-      viewer.current.scene.skyBox.destroy();
-      viewer.current.scene.skyBox = undefined;
+      viewer.current.scene.skyBox = new Cesium.SkyBox({
+        sources: {
+          positiveX: './cesiumAssets/skybox.png',
+          negativeX: './cesiumAssets/skybox.png',
+          positiveY: './cesiumAssets/skybox.png',
+          negativeY: './cesiumAssets/skybox.png',
+          positiveZ: './cesiumAssets/skybox.png',
+          negativeZ: './cesiumAssets/skybox.png',
+        }
+      });
       viewer.current.scene.sun.destroy();
       viewer.current.scene.sun = undefined;
 
