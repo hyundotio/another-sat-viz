@@ -215,7 +215,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           color: category.color,
           visible: !hiddenByDefault.includes(category.name),
           needsDarkText: category.needsDarkText,
-          isDebris: category.isDebris
+          kind: category.kind
         };
 
         initialObjectCategories.push({
@@ -429,30 +429,27 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       // Create entities for each object
       const points = [];
       propagatedCategories.forEach((category) => {
+        let iconUrlEnd;
+        if (category.kind === "DEBRIS") {
+          iconUrlEnd = '_debris.png';
+        } else if (category.kind === "UNCATEGORIZED") {
+          iconUrlEnd = '_unknown.png';
+        } else {
+          iconUrlEnd = '.png';
+        }
+
         category.data.forEach(({position, name, epochDate, satnum, orbitType, isManned}, i) => {
           let iconSize = 6.5;
-          let iconUrl = './cesiumAssets/Models/circle';
-          if (orbitType === 1) {
-            iconSize = 20;
-            iconUrl = './cesiumAssets/Models/triangle';
-          }
-          if (orbitType === 2) {
-            iconSize = 16;
-            iconUrl = './cesiumAssets/Models/cross';
-          }
-          if (category.isDebris) {
-            if (category.name.toLowerCase() === "uncategorized") {
-              iconUrl = iconUrl + '_uncategorized.png';
-            } else {
-              iconUrl = iconUrl + '_debris.png';
-            }
-           } else {
-            iconUrl = iconUrl + '.png';
-           }
-          
+          let iconUrl = './cesiumAssets/Models/circle' + iconUrlEnd;
           if (isManned) {
-            iconUrl = './cesiumAssets/Models/manned.png';
+            iconUrl = './cesiumAssets/Models/manned.png'; //doesn't need url end.
             iconSize = 24;
+          } else if (orbitType === 1) {
+            iconSize = 20;
+            iconUrl = './cesiumAssets/Models/triangle' + iconUrlEnd;
+          } else if (orbitType === 2) {
+            iconSize = 16;
+            iconUrl = './cesiumAssets/Models/cross' + iconUrlEnd;
           }
 
           const entity = viewer.current.entities.add({
