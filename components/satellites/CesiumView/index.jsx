@@ -21,7 +21,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const notificationTimerID = useRef();
 
   // categories that will have their objects hidden on load
-  const hiddenByDefault = useMemo(() => ["Unknown", "Rocket body", "Debris"], []);
+  const hiddenByDefault = useMemo(() => ["Uncategorized", "Rocket body", "Debris"], []);
 
   const helperFunctionsRef = useRef();
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
@@ -429,7 +429,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       // Create entities for each object
       const points = [];
       propagatedCategories.forEach((category) => {
-        category.data.forEach(({position, orbitDuration, name, epochDate, satnum, orbitType, isManned}, i) => {
+        category.data.forEach(({position, name, epochDate, satnum, orbitType, isManned}, i) => {
           let iconSize = 6.5;
           let iconUrl = './cesiumAssets/Models/circle';
           if (orbitType === 1) {
@@ -440,7 +440,16 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             iconSize = 16;
             iconUrl = './cesiumAssets/Models/cross';
           }
-          iconUrl = iconUrl + (category.isDebris ? '_debris.png' : '.png');
+          if (category.isDebris) {
+            if (category.name.toLowerCase() === "uncategorized") {
+              iconUrl = iconUrl + '_uncategorized.png';
+            } else {
+              iconUrl = iconUrl + '_debris.png';
+            }
+           } else {
+            iconUrl = iconUrl + '.png';
+           }
+          
           if (isManned) {
             iconUrl = './cesiumAssets/Models/manned.png';
             iconSize = 24;
@@ -565,10 +574,13 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               <label className="cds--label">Color legend</label>
               <UnorderedList className={styles['legend-container']}>
                 <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active" /> Active objects
+                  <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
                 </ListItem>
                 <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris" /> Debris objects
+                  <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
+                </ListItem>
+                <ListItem className={styles['legend-list-item']}>
+                  <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
                 </ListItem>
               </UnorderedList>
             </div>
