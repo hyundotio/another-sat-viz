@@ -4,6 +4,7 @@ import gpCatalog from "@/data/gp.json";
 // https://cesium.com/learn/cesiumjs/ref-doc/Color.html
 const debrisColor = new CesiumColor.fromBytes(255, 214, 0,255);
 const payloadColor = new CesiumColor.fromBytes(15,98,255,255);
+const unknownColor = new CesiumColor.fromBytes(235,235,235,255);
 
 const debris = {
   name: "Debris",
@@ -22,8 +23,8 @@ const rocketBody = {
 };
 
 const unknown = {
-  name: "Unknown",
-  color: debrisColor,
+  name: "Uncategorized",
+  color: unknownColor,
   data: [],
   isDebris: true,
   needsDarkText: true
