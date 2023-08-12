@@ -1,9 +1,9 @@
 // utils
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import propagateObjects from "@/utils/satellites/propagateObjects";
-import { Globe, Close, Table, SelectWindow } from '@carbon/icons-react';
+import { Globe, Close, SearchLocate, SelectWindow, ChevronLeft, Menu } from '@carbon/icons-react';
 import { throttle } from "lodash";
-import { Button, UnorderedList, ListItem, ToastNotification } from '@carbon/react';
+import { IconButton, Button, UnorderedList, ListItem, ToastNotification, Toggle } from '@carbon/react';
 
 // components and styles
 import Options from "@/components/satellites/Options";
@@ -24,6 +24,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const hiddenByDefault = useMemo(() => ["Uncategorized", "Rocket body", "Debris"], []);
 
   const helperFunctionsRef = useRef();
+  
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -33,6 +34,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [isTracking, setIsTracking] = useState('');
   const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
+  const [sidemenuOpened, setSidemenuOpened] = useState(true);
+  const [threeDView, setThreeDView] = useState(true);
 
   const throttledSetCurrentTime = useCallback(
     throttle(setCurrentTime, 60)
@@ -309,6 +312,21 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   };
 
   useEffect(() => {
+    if (viewer.current && viewer.current.scene) {
+      console.log(viewer.current.scene.mode);
+      if (threeDView) {
+        console.log('turning on 3d');
+        viewer.current.scene.mode = 3;
+        //Cesium.SceneMode.SCENE3D
+      } else {
+        console.log('turning on 2d');
+        viewer.current.scene.mode = 2;
+        //Cesium.SceneMode.SCENE2D
+      }
+    }
+  },[threeDView])
+
+  useEffect(() => {
     //First load fonts
     const plexFont = new FontFace('IBMPlexBold', 'url(./fonts/IBMPlexSans-Bold.woff)');
     plexFont.load().then(function(loaded_face) {
@@ -562,7 +580,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   return (
     
       <>
-        <div className={styles['left-sidebar-container']}>
+        <div className={`${styles['left-sidebar-container']} ${sidemenuOpened ? styles['left-sidebar-container-active'] : ''}`}>
           <div className={styles['left-sidebar-contents']}>
             <TimeControls
               handleMultiplierChange={changeMultiplier}
@@ -570,6 +588,15 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               resetClock={resetClock}
               startDate={startDate}
             />
+            <div className={styles['map-type-container']}>
+              <Toggle
+                aria-label="Toggle between 3D vs 2D"
+                id="d-toggle"
+                labelText="View in 3D"
+                toggled={threeDView}
+                onToggle={(checked) => setThreeDView(checked)}
+              />
+            </div>
             <Options
               objectCategories={objectCategories}
               toggleCategoryVisibility={toggleCategoryVisibility}
@@ -629,7 +656,18 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           </div>
         </div>
 
-        <main className={styles["content"]}>
+        <main className={`${styles["content"]} ${sidemenuOpened ? styles['content-active'] : ''}`}>
+          <div className={styles['menu-icon-toggle']}>
+            <IconButton
+              kind="secondary"
+              label="Hide sidemenu"
+              size="md"
+              
+              onClick={() => setSidemenuOpened(!sidemenuOpened)}
+            >
+              {sidemenuOpened ? <ChevronLeft size={16} /> : <Menu size={16} />}
+            </IconButton>
+          </div>
           <div
             id="cesium-container"
             className={`
@@ -641,7 +679,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               label={isSearchOpen ? 'Close data table' : 'Open data table'}
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               kind="secondary"
-              renderIcon={isSearchOpen ? Close : Table}
+              renderIcon={isSearchOpen ? Close : SearchLocate}
               size="md"
             >
               {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
