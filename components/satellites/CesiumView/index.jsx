@@ -1,9 +1,9 @@
 // utils
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import propagateObjects from "@/utils/satellites/propagateObjects";
-import { Globe, Close, Table, SelectWindow } from '@carbon/icons-react';
+import { Globe, Close, SearchLocate, SelectWindow, ChevronLeft, Menu } from '@carbon/icons-react';
 import { throttle } from "lodash";
-import { Button, UnorderedList, ListItem, ToastNotification } from '@carbon/react';
+import { IconButton, Button, UnorderedList, ListItem, ToastNotification, Toggle } from '@carbon/react';
 
 // components and styles
 import Options from "@/components/satellites/Options";
@@ -24,8 +24,26 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const hiddenByDefault = useMemo(() => ["Uncategorized", "Rocket body", "Debris"], []);
 
   const helperFunctionsRef = useRef();
+  
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
+  const [orbitCategories, setOrbitCategories] = useState([
+    {
+      orbitName: 'leo',
+      type: 0,
+      visible: true
+    },
+    {
+      orbitName: 'meo',
+      type: 1,
+      visible: true
+    },
+    {
+      orbitName: 'geo',
+      type: 2,
+      visible: true
+    }
+  ]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [fontIsLoaded, setFontIsLoaded] = useState(false);
@@ -33,6 +51,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [isTracking, setIsTracking] = useState('');
   const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
+  const [sidemenuOpened, setSidemenuOpened] = useState(true);
+  const [threeDView, setThreeDView] = useState(true);
 
   const throttledSetCurrentTime = useCallback(
     throttle(setCurrentTime, 60)
@@ -45,7 +65,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       const start = helperFunctionsRef.current.JulianDate.fromDate(dateToUse);
       viewer.current.clock.startTime = start.clone();
       viewer.current.clock.currentTime = start.clone();
-      changePointsVisibility(null, true);
+      changePointsVisibility(true);
     }
   }
 
@@ -56,18 +76,62 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   };
 
   // toggle points visibility of a specified category
-  const changePointsVisibility = (category, processAll) => {
+  const changePointsVisibility = (processAll) => {
     const newEntities = viewer.current.entities.values;
-    for (let i = 0; i < newEntities.length; i++) {
+    const newEntitiesLen = newEntities.length;
+    
+    for (let i = 0; i < newEntitiesLen; i++) {
       const entity = newEntities[i];
-      if (processAll === undefined && entity.categoryName === category.name) {
-        entity.show = !entity.show;
+
+      const validObjectCategory = objectCategories.some(c => c.visible && c.name.toLowerCase() === entity.categoryName.toLowerCase());
+      const validOrbitCategory = orbitCategories.some(c => c.visible && c.type === entity.orbitType);
+      
+      if (processAll === undefined) {
+        entity.show = validObjectCategory && validOrbitCategory;
       }
       if (viewer.current.clock.multiplier === 0 && entity.allPositions) {
         entity.position = entity.allPositions.getValue(viewer.current.clock.currentTime);
       }
     }
+
+    const newSelectedEntities = [];
+    const selectedEntitiesLen = selectedEntities.length;
+
+    //Handle unselecting selected objects if it is not visible anymore
+    for (let i = 0; i < selectedEntitiesLen; i++) {
+      const selectedEntity = selectedEntities[i];
+
+      const validObjectCategory = objectCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase());
+      const validOrbitCategory = orbitCategories.some(c => c.visible && c.type === selectedEntity.orbitType);
+
+      if (validObjectCategory && validOrbitCategory) {
+        newSelectedEntities.push(selectedEntity);
+      } else {
+        const entity = viewer.current.entities.getById(selectedEntity.id);
+        handleSelectEntity({id: entity}, {
+          Color: helperFunctionsRef.current.Color,
+          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+          Cartesian2: helperFunctionsRef.current.Cartesian2,
+          Cartesian3: helperFunctionsRef.current.Cartesian3,
+          LabelStyle: helperFunctionsRef.current.LabelStyle,
+          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+        });
+      }
+    }
+    setSelectedEntities(newSelectedEntities);
+    
   };
+
+  const toggleOrbitVisibility = (orbitCategory) => {
+    const newOrbitCategories = [...orbitCategories];
+    const orbitCategoryObject = newOrbitCategories[orbitCategory];
+
+    if (typeof orbitCategoryObject === 'object') {
+      orbitCategoryObject.visible = !orbitCategoryObject.visible;
+      changePointsVisibility();
+      setOrbitCategories(newOrbitCategories);
+    }
+  }
 
   // toggle visibility of a specified category and all its objects
   const toggleCategoryVisibility = (name) => {
@@ -81,27 +145,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       }
     });
 
-    const newSelectedEntities = [];
-
-    selectedEntities.forEach((selectedEntity) => {
-      if (newCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase())) {
-        newSelectedEntities.push(selectedEntity);
-      } else {
-        const entity = viewer.current.entities.getById(selectedEntity.id);
-        handleSelectEntity({id: entity}, {
-          Color: helperFunctionsRef.current.Color,
-          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
-          Cartesian2: helperFunctionsRef.current.Cartesian2,
-          Cartesian3: helperFunctionsRef.current.Cartesian3,
-          LabelStyle: helperFunctionsRef.current.LabelStyle,
-          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
-        });
-      }
-    });
-
-    setSelectedEntities(newSelectedEntities);
     setObjectCategories(newCategories);
-    changePointsVisibility(changedCategory);
+    changePointsVisibility();
   };
 
   const handleSelectEntity = useCallback((pickedObject, helperFunctions) => {
@@ -177,6 +222,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           id: pickedObject.id.id,
           name: pickedObject.id.name,
           satnum: pickedObject.id.satnum,
+          orbitType: pickedObject.id.orbitType,
           categoryName: pickedObject.id.categoryName,
           baseColor: pickedObject.id.baseColor,
           epochDate: pickedObject.id.epochDate
@@ -307,6 +353,18 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       
     }
   };
+
+  useEffect(() => {
+    if (viewer.current && viewer.current.scene) {
+      if (threeDView) {
+        viewer.current.scene.mode = 3;
+        //Cesium.SceneMode.SCENE3D
+      } else {
+        viewer.current.scene.mode = 2;
+        //Cesium.SceneMode.SCENE2D
+      }
+    }
+  },[threeDView])
 
   useEffect(() => {
     //First load fonts
@@ -468,6 +526,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             baseColor: category.color ? category.color : new Cesium.Color.fromBytes(15,98,254,255),
             needsDarkText: category.needsDarkText,
             originalIconSize: iconSize,
+            orbitType: orbitType,
             billboard: {
               image: iconUrl,
               height: iconSize,
@@ -562,7 +621,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   return (
     
       <>
-        <div className={styles['left-sidebar-container']}>
+        <div className={`${styles['left-sidebar-container']} ${sidemenuOpened ? styles['left-sidebar-container-active'] : ''}`}>
           <div className={styles['left-sidebar-contents']}>
             <TimeControls
               handleMultiplierChange={changeMultiplier}
@@ -570,41 +629,54 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               resetClock={resetClock}
               startDate={startDate}
             />
+            <div className={styles['map-type-container']}>
+              <Toggle
+                aria-label="Toggle between 3D vs 2D"
+                id="d-toggle"
+                labelText="View in 3D"
+                toggled={threeDView}
+                onToggle={(checked) => setThreeDView(checked)}
+              />
+            </div>
             <Options
               objectCategories={objectCategories}
               toggleCategoryVisibility={toggleCategoryVisibility}
+              toggleOrbitVisibility={toggleOrbitVisibility}
+              orbitCategories={orbitCategories}
             />
             <div className={styles['divider']}></div>
+            {
+            // <div className={styles['details-container']}>
+            //   <label className="cds--label">Color legend</label>
+            //   <UnorderedList className={styles['legend-container']}>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
+            //     </ListItem>
+            //   </UnorderedList>
+            // </div>
+            // <div className={styles['details-container']}>
+            //   <label className="cds--label">Shape legend</label>
+            //   <UnorderedList className={styles['legend-container']}>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
+            //     </ListItem>
+            //   </UnorderedList>
+            // </div>
+            }
             <div className={styles['details-container']}>
-              <label className="cds--label">Color legend</label>
-              <UnorderedList className={styles['legend-container']}>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
-                </ListItem>
-              </UnorderedList>
-            </div>
-            <div className={styles['details-container']}>
-              <label className="cds--label">Shape legend</label>
-              <UnorderedList className={styles['legend-container']}>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
-                </ListItem>
-              </UnorderedList>
-            </div>
-            <div className={styles['details-container']}>
-              <label className="cds--label">Details</label>
+              <label className="cds--label">About</label>
               <UnorderedList>
                 <ListItem>
                   Data source: Space-Track General Perbutation TLEs
@@ -629,7 +701,18 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           </div>
         </div>
 
-        <main className={styles["content"]}>
+        <main className={`${styles["content"]} ${sidemenuOpened ? styles['content-active'] : ''}`}>
+          <div className={styles['menu-icon-toggle']}>
+            <IconButton
+              kind="secondary"
+              label="Hide sidemenu"
+              size="md"
+              
+              onClick={() => setSidemenuOpened(!sidemenuOpened)}
+            >
+              {sidemenuOpened ? <ChevronLeft size={16} /> : <Menu size={16} />}
+            </IconButton>
+          </div>
           <div
             id="cesium-container"
             className={`
@@ -641,7 +724,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               label={isSearchOpen ? 'Close data table' : 'Open data table'}
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               kind="secondary"
-              renderIcon={isSearchOpen ? Close : Table}
+              renderIcon={isSearchOpen ? Close : SearchLocate}
               size="md"
             >
               {isSearchOpen ? 'Hide data explorer' : 'Open data explorer'}
