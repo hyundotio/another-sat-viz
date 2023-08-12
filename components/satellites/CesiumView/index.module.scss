@@ -108,12 +108,14 @@
   max-width: 452px;
   height: 100%;
   transition: 0.2s width ease-out;
-  overflow-y: auto;
+  overflow-x: hidden;
   &.left-sidebar-container-active {
     width: auto;
     min-width: 434px;
   }
   .left-sidebar-contents {
+    height: 100%;
+    overflow-y: scroll;
     padding: 2rem;
     width: 434px;
   }

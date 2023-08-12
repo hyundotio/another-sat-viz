@@ -1,8 +1,23 @@
 @import "@/styles";
 
+.object-filtering{
+  margin-bottom: 1.5rem;
+}
+
 .sat-checkbox-container {
   display: flex;
   align-items: center;
+}
+
+.orbit-selection {
+    
+    strong {
+      font-weight: 600;
+      width: 1rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
 }
 
 .sat-type-circle {

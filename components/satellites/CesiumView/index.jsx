@@ -27,6 +27,23 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
+  const [orbitCategories, setOrbitCategories] = useState([
+    {
+      orbitName: 'leo',
+      type: 0,
+      visible: true
+    },
+    {
+      orbitName: 'meo',
+      type: 1,
+      visible: true
+    },
+    {
+      orbitName: 'geo',
+      type: 2,
+      visible: true
+    }
+  ]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [fontIsLoaded, setFontIsLoaded] = useState(false);
@@ -48,7 +65,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       const start = helperFunctionsRef.current.JulianDate.fromDate(dateToUse);
       viewer.current.clock.startTime = start.clone();
       viewer.current.clock.currentTime = start.clone();
-      changePointsVisibility(null, true);
+      changePointsVisibility(true);
     }
   }
 
@@ -59,18 +76,62 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   };
 
   // toggle points visibility of a specified category
-  const changePointsVisibility = (category, processAll) => {
+  const changePointsVisibility = (processAll) => {
     const newEntities = viewer.current.entities.values;
-    for (let i = 0; i < newEntities.length; i++) {
+    const newEntitiesLen = newEntities.length;
+    
+    for (let i = 0; i < newEntitiesLen; i++) {
       const entity = newEntities[i];
-      if (processAll === undefined && entity.categoryName === category.name) {
-        entity.show = !entity.show;
+
+      const validObjectCategory = objectCategories.some(c => c.visible && c.name.toLowerCase() === entity.categoryName.toLowerCase());
+      const validOrbitCategory = orbitCategories.some(c => c.visible && c.type === entity.orbitType);
+      
+      if (processAll === undefined) {
+        entity.show = validObjectCategory && validOrbitCategory;
       }
       if (viewer.current.clock.multiplier === 0 && entity.allPositions) {
         entity.position = entity.allPositions.getValue(viewer.current.clock.currentTime);
       }
     }
+
+    const newSelectedEntities = [];
+    const selectedEntitiesLen = selectedEntities.length;
+
+    //Handle unselecting selected objects if it is not visible anymore
+    for (let i = 0; i < selectedEntitiesLen; i++) {
+      const selectedEntity = selectedEntities[i];
+
+      const validObjectCategory = objectCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase());
+      const validOrbitCategory = orbitCategories.some(c => c.visible && c.type === selectedEntity.orbitType);
+
+      if (validObjectCategory && validOrbitCategory) {
+        newSelectedEntities.push(selectedEntity);
+      } else {
+        const entity = viewer.current.entities.getById(selectedEntity.id);
+        handleSelectEntity({id: entity}, {
+          Color: helperFunctionsRef.current.Color,
+          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+          Cartesian2: helperFunctionsRef.current.Cartesian2,
+          Cartesian3: helperFunctionsRef.current.Cartesian3,
+          LabelStyle: helperFunctionsRef.current.LabelStyle,
+          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+        });
+      }
+    }
+    setSelectedEntities(newSelectedEntities);
+    
   };
+
+  const toggleOrbitVisibility = (orbitCategory) => {
+    const newOrbitCategories = [...orbitCategories];
+    const orbitCategoryObject = newOrbitCategories[orbitCategory];
+
+    if (typeof orbitCategoryObject === 'object') {
+      orbitCategoryObject.visible = !orbitCategoryObject.visible;
+      changePointsVisibility();
+      setOrbitCategories(newOrbitCategories);
+    }
+  }
 
   // toggle visibility of a specified category and all its objects
   const toggleCategoryVisibility = (name) => {
@@ -84,27 +145,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       }
     });
 
-    const newSelectedEntities = [];
-
-    selectedEntities.forEach((selectedEntity) => {
-      if (newCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase())) {
-        newSelectedEntities.push(selectedEntity);
-      } else {
-        const entity = viewer.current.entities.getById(selectedEntity.id);
-        handleSelectEntity({id: entity}, {
-          Color: helperFunctionsRef.current.Color,
-          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
-          Cartesian2: helperFunctionsRef.current.Cartesian2,
-          Cartesian3: helperFunctionsRef.current.Cartesian3,
-          LabelStyle: helperFunctionsRef.current.LabelStyle,
-          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
-        });
-      }
-    });
-
-    setSelectedEntities(newSelectedEntities);
     setObjectCategories(newCategories);
-    changePointsVisibility(changedCategory);
+    changePointsVisibility();
   };
 
   const handleSelectEntity = useCallback((pickedObject, helperFunctions) => {
@@ -180,6 +222,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           id: pickedObject.id.id,
           name: pickedObject.id.name,
           satnum: pickedObject.id.satnum,
+          orbitType: pickedObject.id.orbitType,
           categoryName: pickedObject.id.categoryName,
           baseColor: pickedObject.id.baseColor,
           epochDate: pickedObject.id.epochDate
@@ -313,13 +356,10 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   useEffect(() => {
     if (viewer.current && viewer.current.scene) {
-      console.log(viewer.current.scene.mode);
       if (threeDView) {
-        console.log('turning on 3d');
         viewer.current.scene.mode = 3;
         //Cesium.SceneMode.SCENE3D
       } else {
-        console.log('turning on 2d');
         viewer.current.scene.mode = 2;
         //Cesium.SceneMode.SCENE2D
       }
@@ -486,6 +526,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             baseColor: category.color ? category.color : new Cesium.Color.fromBytes(15,98,254,255),
             needsDarkText: category.needsDarkText,
             originalIconSize: iconSize,
+            orbitType: orbitType,
             billboard: {
               image: iconUrl,
               height: iconSize,
@@ -600,6 +641,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             <Options
               objectCategories={objectCategories}
               toggleCategoryVisibility={toggleCategoryVisibility}
+              toggleOrbitVisibility={toggleOrbitVisibility}
+              orbitCategories={orbitCategories}
             />
             <div className={styles['divider']}></div>
             <div className={styles['details-container']}>
