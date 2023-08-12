@@ -19,14 +19,14 @@ const Satellites = ({ recentLaunches, token }) => {
   return (
     <Layout>
       <Head>
-        <title>Yet another globe with space dots</title>
+        <title>Loading greatness...</title>
       </Head>
 
       <Theme theme={"g100"}>
-        <PageLoader
-          isActive={isLoading}
-          text="Loading data & creating orbits"
-        />
+        {
+          isLoading ? 
+          <PageLoader /> : null
+        }
 
         <CesiumView
           token={token}
