@@ -676,7 +676,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
             // </div>
             }
             <div className={styles['details-container']}>
-              <label className="cds--label">Details</label>
+              <label className="cds--label">About</label>
               <UnorderedList>
                 <ListItem>
                   Data source: Space-Track General Perbutation TLEs
