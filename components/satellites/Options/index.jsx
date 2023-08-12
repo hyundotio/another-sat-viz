@@ -53,7 +53,7 @@ const Options = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibi
         <fieldset className="cds--fieldset">
           <legend className="cds--label">Visible orbits</legend>
           <Checkbox
-            labelText={<span className={styles['orbit-selection']}><strong>•</strong>  Low earth orbit</span>}
+            labelText={<span className={styles['orbit-selection']}><span className={styles["sat-type-circle"]}></span>Low earth orbit</span>}
             id={'leo-checkbox'}
             value={'leo'}
             checked={orbitCategories[0].visible}
@@ -62,7 +62,7 @@ const Options = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibi
             }}
           />
           <Checkbox
-            labelText={<span className={styles['orbit-selection']}><strong>▲</strong> Medium earth orbit</span>}
+            labelText={<span className={styles['orbit-selection']}><strong>▲</strong>Medium earth orbit</span>}
             id={'meo-checkbox'}
             value={'meo'}
             checked={orbitCategories[1].visible}
@@ -71,7 +71,7 @@ const Options = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibi
             }}
           />
           <Checkbox
-            labelText={<span className={styles['orbit-selection']}><strong>+</strong> Geosynchronous orbit</span>}
+            labelText={<span className={styles['orbit-selection']}><strong>+</strong>Geosynchronous orbit</span>}
             id={'geo-checkbox'}
             value={'geo'}
             checked={orbitCategories[2].visible}

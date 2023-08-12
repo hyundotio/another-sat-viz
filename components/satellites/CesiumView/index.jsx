@@ -645,34 +645,36 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               orbitCategories={orbitCategories}
             />
             <div className={styles['divider']}></div>
-            <div className={styles['details-container']}>
-              <label className="cds--label">Color legend</label>
-              <UnorderedList className={styles['legend-container']}>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
-                </ListItem>
-              </UnorderedList>
-            </div>
-            <div className={styles['details-container']}>
-              <label className="cds--label">Shape legend</label>
-              <UnorderedList className={styles['legend-container']}>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
-                </ListItem>
-                <ListItem className={styles['legend-list-item']}>
-                  <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
-                </ListItem>
-              </UnorderedList>
-            </div>
+            {
+            // <div className={styles['details-container']}>
+            //   <label className="cds--label">Color legend</label>
+            //   <UnorderedList className={styles['legend-container']}>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
+            //     </ListItem>
+            //   </UnorderedList>
+            // </div>
+            // <div className={styles['details-container']}>
+            //   <label className="cds--label">Shape legend</label>
+            //   <UnorderedList className={styles['legend-container']}>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
+            //     </ListItem>
+            //     <ListItem className={styles['legend-list-item']}>
+            //       <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
+            //     </ListItem>
+            //   </UnorderedList>
+            // </div>
+            }
             <div className={styles['details-container']}>
               <label className="cds--label">Details</label>
               <UnorderedList>
