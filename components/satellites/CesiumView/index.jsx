@@ -201,6 +201,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       // Add the orbit path polyline to the viewer
       viewer.current.entities.add({
         categoryName: pickedObject.id.categoryName,
+        orbitType: pickedObject.id.orbitType,
         id: polylineID,
         polyline: {
           positions: cartesianPositions,
