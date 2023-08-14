@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import propagateObjects from "@/utils/satellites/propagateObjects";
 import { Globe, Close, SearchLocate, SelectWindow, ChevronLeft, Menu } from '@carbon/icons-react';
-import { throttle } from "lodash";
 import { IconButton, Button, UnorderedList, ListItem, ToastNotification, Toggle } from '@carbon/react';
 
 // components and styles
@@ -52,6 +51,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
   const [sidemenuOpened, setSidemenuOpened] = useState(true);
   const [threeDView, setThreeDView] = useState(true);
+  const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
 
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
@@ -65,8 +65,10 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   // change time flow multiplier
   const changeMultiplier = (multiplier) => {
-    viewer.current.clock.shouldAnimate = multiplier !== 0;
-    viewer.current.clock.multiplier = multiplier;
+    if (viewer.current && viewer.current.clock) {
+      viewer.current.clock.shouldAnimate = multiplier !== 0;
+      viewer.current.clock.multiplier = multiplier;
+    }
   };
 
   // toggle points visibility of a specified category
@@ -557,10 +559,16 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
         // Update positions and clocks of each entity separately
         const pointsLen = points.length;
 
-        if (Math.abs(Cesium.JulianDate.toDate(clock.currentTime).getTime() - Cesium.JulianDate.toDate(clock.startTime).getTime()) > 4800000) {
+        const currentTimeTs = Cesium.JulianDate.toDate(clock.currentTime).getTime();
+        const startTimeTs = Cesium.JulianDate.toDate(clock.startTime).getTime();
+        if (currentTimeTs - startTimeTs > 4800000) {
           //Current limit is 80 min propagation
           //Restarts after 80 min
           viewer.current.clock.currentTime = viewer.current.clock.startTime.clone();
+        } else if (currentTimeTs <= startTimeTs) {
+          viewer.current.clock.currentTime = viewer.current.clock.startTime.clone();
+          setExponentialMultiplier(0);
+          changeMultiplier(0);
         }
 
         for (let i = 0; i < pointsLen; i++) {
@@ -627,6 +635,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               helperFunctions={{JulianDate: helperFunctionsRef.current ? helperFunctionsRef.current.JulianDate : null}}
               resetClock={resetClock}
               startDate={startDate}
+              exponentialMultiplier={exponentialMultiplier}
+              setExponentialMultiplier={setExponentialMultiplier}
             />
             <div className={styles['map-type-container']}>
               <Toggle

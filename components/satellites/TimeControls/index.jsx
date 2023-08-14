@@ -16,11 +16,12 @@ const TimeControls = ({
   currentClock,
   helperFunctions,
   resetClock,
-  startDate
+  startDate,
+  exponentialMultiplier,
+  setExponentialMultiplier
 }) => {
   const timerID = useRef();
   const [inputMultiplier, setInputMultiplier] = useState(0);
-  const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
   const [timestamp, setTimestamp] = useState('');
   const range = 100;
 
@@ -53,6 +54,7 @@ const TimeControls = ({
     if (exponentialMultiplier) {
       updateTime(true);
     } else {
+      setInputMultiplier(0);
       updateTime();
     }
   }, [exponentialMultiplier])
@@ -127,22 +129,23 @@ const TimeControls = ({
               onClick={() => {
                 stopTime();
                 resetClock();
+                updateTime();
               }}>
                 <SkipBack />
               </IconButton>
           </div>
           <div>
             <IconButton
-              label={Math.abs(inputMultiplier) ? 'Pause' : 'Play'}
+              label={Math.abs(exponentialMultiplier) > 0 ? 'Pause' : 'Play'}
               kind="secondary"
               onClick={() => {
-                if (Math.abs(inputMultiplier) > 0) {
+                if (Math.abs(exponentialMultiplier) > 0) {
                   stopTime();
                 } else {
                   handleTimeChange(30);
                 }
               }}>
-              {Math.abs(inputMultiplier) > 0 ? <Pause /> : <Play />}
+              {Math.abs(exponentialMultiplier) > 0 ? <Pause /> : <Play />}
             </IconButton>
           </div>
         </div>
