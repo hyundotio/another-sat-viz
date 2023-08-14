@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./index.module.scss";
 import { Slider, TextInput, IconButton } from '@carbon/react';
 import { Play, Pause, SkipBack } from '@carbon/icons-react';
@@ -13,14 +13,49 @@ const SECONDS_IN_A_DAY = 86400000;
 
 const TimeControls = ({
   handleMultiplierChange,
-  currentTime,
+  currentClock,
+  helperFunctions,
   resetClock,
   startDate
 }) => {
+  const timerID = useRef();
   const [inputMultiplier, setInputMultiplier] = useState(0);
   const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
-  const [timestamp, setTimestamp] = useState(currentTime);
+  const [timestamp, setTimestamp] = useState('');
   const range = 100;
+
+  const updateTime = (repeat) => {
+    //Update timestamp
+    if (helperFunctions.JulianDate && currentClock.currentTime) {
+      setTimestamp(helperFunctions.JulianDate.toDate(currentClock.currentTime).toISOString());
+      if (repeat) {
+        timerID.current = setTimeout(() => updateTime(repeat), 200);
+      }
+    }
+  }
+
+  useEffect(() => {
+    //Initial set time
+    if (timestamp === '' && helperFunctions.JulianDate && currentClock.currentTime) {
+      updateTime();
+    }
+  }, [timestamp, helperFunctions, currentClock])
+
+  useEffect(() => {
+    //Clear timeout when exiting page
+    return () => {
+      clearTimeout(timerID.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(timerID.current);
+    if (exponentialMultiplier) {
+      updateTime(true);
+    } else {
+      updateTime();
+    }
+  }, [exponentialMultiplier])
 
   const handleTimeChange = (value, existingValue) => {
     if (!isNaN(value)) {
@@ -44,10 +79,6 @@ const TimeControls = ({
     }
   };
 
-  useEffect(() => {
-    setTimestamp(currentTime);
-  }, [currentTime]);
-
   const stopTime = () => {
     setInputMultiplier(0);
     setExponentialMultiplier(0);
@@ -64,7 +95,7 @@ const TimeControls = ({
           <TextInput
             id="timestamp"
             invalidText="A valid ISO8601 Timestamp is required"
-            helperText="+/- 80 minutes max"
+            helperText="+80 minutes max from Epoch"
             labelText={`UTC Timestamp (Epoch: ${startDate.toISOString()})`}
             placeholder="2023-08-31T12:34:56.789Z"
             value={timestamp}
@@ -75,7 +106,7 @@ const TimeControls = ({
               if (isIsoDate(e.target.value) && Math.abs(startDateTs - newDate.getTime()) < (SECONDS_IN_A_DAY * 3)) {
                 resetClock(newDate);
               } else {
-                setTimestamp(currentTime);
+                //setTimestamp(currentTime);
               }
             }}
           />

@@ -19,7 +19,7 @@ const Satellites = ({ recentLaunches, token }) => {
   return (
     <Layout>
       <Head>
-        <title>Loading greatness...</title>
+        <title>{isLoading ? 'Loading greatness...' : 'Yet another globe with space dots'}</title>
       </Head>
 
       <Theme theme={"g100"}>
