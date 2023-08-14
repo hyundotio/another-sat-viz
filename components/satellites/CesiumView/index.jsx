@@ -47,21 +47,15 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [fontIsLoaded, setFontIsLoaded] = useState(false);
-  const [currentTime, setCurrentTime] = useState(startDate.toISOString());
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [isTracking, setIsTracking] = useState('');
   const [failMessage, setFailMessage] = useState({ satnum: '', catname: ''});
   const [sidemenuOpened, setSidemenuOpened] = useState(true);
   const [threeDView, setThreeDView] = useState(true);
 
-  const throttledSetCurrentTime = useCallback(
-    throttle(setCurrentTime, 60)
-  , []); // eslint-disable-next-line react-hooks/exhaustive-deps
-
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
       const dateToUse = date ? date : startDate;
-      setCurrentTime(dateToUse.toISOString());
       const start = helperFunctionsRef.current.JulianDate.fromDate(dateToUse);
       viewer.current.clock.startTime = start.clone();
       viewer.current.clock.currentTime = start.clone();
@@ -555,7 +549,6 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           return;
         }
 
-        throttledSetCurrentTime(Cesium.JulianDate.toDate(clock.currentTime).toISOString());
         // Update positions and clocks of each entity separately
         const pointsLen = points.length;
 
@@ -616,7 +609,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       viewer.current.camera.flyHome(0.5); // set initial camera position
     });
 
-  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded, handleSelectEntity, throttledSetCurrentTime]);
+  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded, handleSelectEntity]);
 
   return (
     
@@ -625,7 +618,8 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           <div className={styles['left-sidebar-contents']}>
             <TimeControls
               handleMultiplierChange={changeMultiplier}
-              currentTime={currentTime}
+              currentClock={viewer.current.clock}
+              helperFunctions={{JulianDate: helperFunctionsRef.current ? helperFunctionsRef.current.JulianDate : null}}
               resetClock={resetClock}
               startDate={startDate}
             />
