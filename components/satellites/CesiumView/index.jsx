@@ -16,6 +16,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const interpolationDegree = 7;
   const initialClockMultiplier = 0;
   const startDate = useMemo(() => new Date(), []);
+  const easterEggRef = useRef();
   const viewer = useRef({}); // Cesium viewer object reference
   const notificationTimerID = useRef();
 
@@ -24,6 +25,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const helperFunctionsRef = useRef();
   
+  const [easterEggTracker, setEasterEggTracker] = useState('');
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
   const [orbitCategories, setOrbitCategories] = useState([
@@ -52,6 +54,28 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [sidemenuOpened, setSidemenuOpened] = useState(true);
   const [threeDView, setThreeDView] = useState(true);
   const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
+
+  const onKeyDown = (e) => {
+    const newVal = (easterEggTracker + e.key).toLowerCase();
+    if ('aeiou'.indexOf(newVal) === 0 && easterEggRef.current) {
+      setEasterEggTracker(newVal);
+      if (newVal.length >= 5) {
+        setEasterEggTracker('');
+        if (newVal === 'aeiou') {
+          if (easterEggRef.current.duration > 0 && !easterEggRef.current.paused) {
+            easterEggRef.current.pause();
+            easterEggRef.current.currentTime = 0;
+          } else {
+            easterEggRef.current.play();
+          }
+        }
+      } else {
+        setEasterEggTracker(newVal);
+      }
+    } else {
+      setEasterEggTracker('');
+    }
+  }
 
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
@@ -377,10 +401,42 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       // error occurred
     });
 
+    //Do the ascii art
+    console.log(`
+    ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    ⠀⠀⠀⣤⡄⠀⠀⠀⠀⣀⣤⢀⣿⣿⣿⣿⣿⣿⡀⣤⣀⠠⠄⢀⣤⣄⠀⠀⠀⠀
+    ⠀⠀⠀⢹⠁⠀⠀⣠⣾⣿⠿⠸⠿⠟⠛⠛⠻⠿⠇⠿⣿⣷⣄⠘⠿⠿⠀⠀⠀⠀
+    ⠀⠀⠀⢸⠀⠀⣴⡿⠁⣠⣶⡶⠒⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣦⠀⠶⡀⠀⠀⠀
+    ⠀⠀⠀⢀⠀⣸⡟⠀⣾⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣇⠀⡀⠀⠀⠀
+    ⠀⠀⣸⡏⢠⣿⠁⢸⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⡄⢹⣇⠀⠀
+    ⠀⠀⣿⡇⢸⡏⠀⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⡇⢸⣿⠀⠀
+    ⠀⠘⢿⡇⢸⣧⠀⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⡇⢸⡿⠃⠀
+    ⠀⠀⠀⠁⠸⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⠇⠈⠀⠀⠀
+    ⠀⠀⠀⠀⠀⠻⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⠟⠀⠀⠀⠀⠀
+    ⠀⠀⠀⠀⠀⠀⠙⢿⣷⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⣾⡿⠋⠀⠀⠀⠀⠀⠀
+    ⠀⠀⠀⠀⠀⢼⣷⣤⣈⠙⠛⠿⠿⠿⣿⣿⠿⠿⠿⠛⠋⣁⣤⣾⡧⠀⠀⠀⠀⠀
+    ⠀⠀⣠⣴⣷⣦⣈⠙⠛⠿⢷⣶⡆⢠⣤⣤⡄⢰⣶⡾⠿⠛⠋⣁⣴⣾⣦⣄⠀⠀
+    ⠀⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⣤⣈⣉⣉⣁⣤⣤⣴⣶⣾⣿⣿⣿⣿⣿⣿⣿⠀
+    ⠀⠛⠛⠃⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠘⠛⠛⠀   
+    Type in aeiou for a good time.
+    Type it again to stop.
+    Headphones on please.
+    `)
+
     return () => {
+      document.removeEventListener("keydown", onKeyDown, false);
       clearTimeout(notificationTimerID.current);
     }
   }, []);
+
+  useEffect(() => {
+    //Bind easteregg
+    document.addEventListener("keydown", onKeyDown, false);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, false);
+    }
+  }, [onKeyDown])
 
   useEffect(() => {
     if (failMessage.catname && failMessage.satnum) {
@@ -823,6 +879,9 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               /> : null
             }
           </div>
+          <audio autoPlay loop controls={false} className={styles["easter-egg-audio"]} ref={easterEggRef}>
+            <source src="./aeiou.mp3"></source>
+          </audio>
         </main>
       </>
       
