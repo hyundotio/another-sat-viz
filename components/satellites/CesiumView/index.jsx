@@ -94,7 +94,6 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     //Handle unselecting selected objects if it is not visible anymore
     for (let i = 0; i < selectedEntitiesLen; i++) {
       const selectedEntity = selectedEntities[i];
-
       const validObjectCategory = objectCategories.some(c => c.visible && c.name.toLowerCase() === selectedEntity.categoryName.toLowerCase());
       const validOrbitCategory = orbitCategories.some(c => c.visible && c.type === selectedEntity.orbitType);
 
@@ -110,6 +109,11 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           LabelStyle: helperFunctionsRef.current.LabelStyle,
           VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
         });
+
+        if (isTracking === selectedEntity.id) {
+          //On top of unselecting, reset camera if visible item is tracked.
+          resetCamera();
+        }
       }
     }
     setSelectedEntities(newSelectedEntities);
@@ -201,6 +205,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
       // Add the orbit path polyline to the viewer
       viewer.current.entities.add({
         categoryName: pickedObject.id.categoryName,
+        orbitType: pickedObject.id.orbitType,
         id: polylineID,
         polyline: {
           positions: cartesianPositions,
