@@ -3,9 +3,9 @@ import { useState, useCallback } from "react";
 import Head from "next/head";
 
 // components and styles
-import Layout from "@/components/shared/Layout";
-import CesiumView from "@/components/satellites/CesiumView";
-import PageLoader from "@/components/shared/PageLoader";
+import Shell from "../components/Shell";
+import CesiumView from "../components/Cesium3DView";
+import PageLoader from "../components/PageLoader";
 
 import { Theme } from "@carbon/react";
 
@@ -17,7 +17,7 @@ const Satellites = ({ recentLaunches, token }) => {
   }, []);
 
   return (
-    <Layout>
+    <Shell>
       <Head>
         <title>{isLoading ? 'Loading greatness...' : 'Yet another globe with space dots'}</title>
       </Head>
@@ -34,7 +34,7 @@ const Satellites = ({ recentLaunches, token }) => {
           setLoadingStatus={setLoadingStatus}
         />
       </Theme>
-    </Layout>
+    </Shell>
   );
 };
 

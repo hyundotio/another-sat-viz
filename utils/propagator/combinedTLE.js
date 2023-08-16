@@ -1,5 +1,5 @@
 import { Color as CesiumColor } from "@/cesiumSource/Cesium";
-import gpCatalog from "@/data/gp.json";
+import gpCatalog from "../../data/gp.json";
 
 // https://cesium.com/learn/cesiumjs/ref-doc/Color.html
 const debrisColor = new CesiumColor.fromBytes(255, 214, 0,255);

@@ -1,22 +1,21 @@
 // utils
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import propagateObjects from "@/utils/satellites/propagateObjects";
+import propagateObjects from "../utils/propagator/propagateObjects";
 import { Globe, Close, SearchLocate, SelectWindow, ChevronLeft, Menu } from '@carbon/icons-react';
 import { IconButton, Button, UnorderedList, ListItem, ToastNotification, Toggle } from '@carbon/react';
 
 // components and styles
-import Options from "@/components/satellites/Options";
-import TimeControls from "@/components/satellites/TimeControls";
-import styles from "./index.module.scss";
-import Search from "@/components/satellites/Search";
-import SelectedEntitiesList from "@/components/satellites/SelectedEntitiesList";
+import Filters from "./Filters";
+import TimeControls from "./TimeControls";
+import Search from "./Search";
+import SelectedEntitiesList from "./SelectedEntitiesList";
+import styles from "./Cesium3DView.module.scss";
 
-const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
+const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
 
   const interpolationDegree = 7;
   const initialClockMultiplier = 0;
   const startDate = useMemo(() => new Date(), []);
-  const easterEggRef = useRef();
   const viewer = useRef({}); // Cesium viewer object reference
   const notificationTimerID = useRef();
 
@@ -25,7 +24,6 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
   const helperFunctionsRef = useRef();
   
-  const [easterEggTracker, setEasterEggTracker] = useState('');
   const [isSelectedEntitiesListOpen, setIsSelectedEntitiesListOpen] = useState(false);
   const [objectCategories, setObjectCategories] = useState([]);
   const [orbitCategories, setOrbitCategories] = useState([
@@ -54,28 +52,6 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   const [sidemenuOpened, setSidemenuOpened] = useState(true);
   const [threeDView, setThreeDView] = useState(true);
   const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
-
-  const onKeyDown = (e) => {
-    const newVal = (easterEggTracker + e.key).toLowerCase();
-    if ('aeiou'.indexOf(newVal) === 0 && easterEggRef.current) {
-      setEasterEggTracker(newVal);
-      if (newVal.length >= 5) {
-        setEasterEggTracker('');
-        if (newVal === 'aeiou') {
-          if (easterEggRef.current.duration > 0 && !easterEggRef.current.paused) {
-            easterEggRef.current.pause();
-            easterEggRef.current.currentTime = 0;
-          } else {
-            easterEggRef.current.play();
-          }
-        }
-      } else {
-        setEasterEggTracker(newVal);
-      }
-    } else {
-      setEasterEggTracker('');
-    }
-  }
 
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
@@ -162,12 +138,14 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     const newCategories = [...objectCategories];
     let changedCategory = null;
 
-    newCategories.forEach((category) => {
+    const newCategoriesLen = newCategories.length;
+    for (let i = 0; i < newCategoriesLen; i++) {
+      const category = newCategories[i];
       if (category.name === name) {
         changedCategory = category;
         category.visible = !category.visible;
       }
-    });
+    }
 
     setObjectCategories(newCategories);
     changePointsVisibility();
@@ -276,7 +254,9 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     const propagatedCategories = [];
     let seenSats = [];
 
-    combinedTLE.forEach((category) => {
+    const combinedTLELen = combinedTLE.length;
+    for (let i = 0; i < combinedTLELen; i++) {
+      const category = combinedTLE[i];
       const { newSeen, data } = propagateObjects(seenSats, category.data, startDate, interpolationDegree, helperFunctions);
       seenSats = newSeen;
 
@@ -299,7 +279,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           ...extraData
         });
       }
-    });
+    }
 
     return {
       propagatedCategories,
@@ -418,25 +398,13 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     ⠀⠀⣠⣴⣷⣦⣈⠙⠛⠿⢷⣶⡆⢠⣤⣤⡄⢰⣶⡾⠿⠛⠋⣁⣴⣾⣦⣄⠀⠀
     ⠀⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⣤⣈⣉⣉⣁⣤⣤⣴⣶⣾⣿⣿⣿⣿⣿⣿⣿⠀
     ⠀⠛⠛⠃⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠘⠛⠛⠀   
-    Type in aeiou for a good time.
-    Type it again to stop.
-    Headphones on please.
+    Hello. contact me at hi@hyun.io
     `)
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown, false);
       clearTimeout(notificationTimerID.current);
     }
   }, []);
-
-  useEffect(() => {
-    //Bind easteregg
-    document.addEventListener("keydown", onKeyDown, false);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, false);
-    }
-  }, [onKeyDown])
 
   useEffect(() => {
     if (failMessage.catname && failMessage.satnum) {
@@ -455,7 +423,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
     if (isLoaded || !fontIsLoaded) {
       return;
     }
-    const combinedTLE = import("@/utils/satellites/combinedTLE");
+    const combinedTLE = import("../utils/propagator/combinedTLE");
     const Cesium = import("@/cesiumSource/Cesium");
 
     Promise.all([Cesium, combinedTLE]).then((values) => {
@@ -551,7 +519,10 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
 
       // Create entities for each object
       const points = [];
-      propagatedCategories.forEach((category) => {
+
+      const propagatedCategoriesLen = propagatedCategories.length;
+      for (let i = 0; i < propagatedCategoriesLen; i++) {
+        const category = propagatedCategories[i];
         let iconUrlEnd;
         if (category.kind === "DEBRIS") {
           iconUrlEnd = '_debris.png';
@@ -561,7 +532,16 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           iconUrlEnd = '.png';
         }
 
-        category.data.forEach(({position, name, epochDate, satnum, orbitType, isManned}, i) => {
+        const categoryData = category.data;
+        const categoryDataLen = categoryData.length;
+        for (let j = 0; j < categoryDataLen; j++) {
+          const categoryDatum = categoryData[j];
+          const position = categoryDatum.position;
+          const name = categoryDatum.name;
+          const epochDate = categoryDatum.epochDate;
+          const satnum = categoryDatum.satnum;
+          const orbitType = categoryDatum.orbitType;
+          const isManned = categoryDatum.isManned;
           let iconSize = 6.5;
           let iconUrl = './cesiumAssets/Models/circle' + iconUrlEnd;
           if (isManned) {
@@ -576,7 +556,7 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           }
 
           const entity = viewer.current.entities.add({
-            id: `${category.name}-${satnum}-${i}`,
+            id: `${category.name}-${satnum}-${j}`,
             epochDate,
             allPositions: position,
             position,
@@ -603,9 +583,9 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
           });
 
           points.push(entity);
-        });
-      });
-
+        }
+      }
+      
       // Animate
       viewer.current.clock.onTick.addEventListener((clock) => {
         if (clock.multiplier === 0) {
@@ -703,43 +683,13 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                 onToggle={(checked) => setThreeDView(checked)}
               />
             </div>
-            <Options
+            <Filters
               objectCategories={objectCategories}
               toggleCategoryVisibility={toggleCategoryVisibility}
               toggleOrbitVisibility={toggleOrbitVisibility}
               orbitCategories={orbitCategories}
             />
             <div className={styles['divider']}></div>
-            {
-            // <div className={styles['details-container']}>
-            //   <label className="cds--label">Color legend</label>
-            //   <UnorderedList className={styles['legend-container']}>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/square.png" alt="Legend item for Active objects" /> Active objects
-            //     </ListItem>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/square_debris.png" alt="Legend item for Debris objects" /> Debris objects
-            //     </ListItem>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/square_unknown.png" alt="Legend item for Uncategorized objects" /> Uncategorized objects
-            //     </ListItem>
-            //   </UnorderedList>
-            // </div>
-            // <div className={styles['details-container']}>
-            //   <label className="cds--label">Shape legend</label>
-            //   <UnorderedList className={styles['legend-container']}>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/circle.png" alt="Legend item for LEO" /> {`Low earth orbit (LEO)`}
-            //     </ListItem>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/triangle.png" alt="Legend item for MEO" /> {`Medium earth orbit (MEO)`}
-            //     </ListItem>
-            //     <ListItem className={styles['legend-list-item']}>
-            //       <img src="./cesiumAssets/Models/cross.png" alt="Legend item for GEO" /> {`Geosynchronous orbit (GEO)`}
-            //     </ListItem>
-            //   </UnorderedList>
-            // </div>
-            }
             <div className={styles['details-container']}>
               <label className="cds--label">About</label>
               <UnorderedList>
@@ -848,20 +798,24 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
                   unselectEntities={(entities) => {
                     //This is to handle Unselect from table.
                     let shouldUntrack = false;
-                    entities.forEach(ent => {
-                      const entity = viewer.current.entities.getById(ent.id);
-                      handleSelectEntity({id: entity}, {
-                        Color: helperFunctionsRef.current.Color,
-                        LabelGraphics: helperFunctionsRef.current.LabelGraphics,
-                        Cartesian2: helperFunctionsRef.current.Cartesian2,
-                        Cartesian3: helperFunctionsRef.current.Cartesian3,
-                        LabelStyle: helperFunctionsRef.current.LabelStyle,
-                        VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
-                      });
-                      if (ent.id === isTracking) {
-                        shouldUntrack = true;
+                    if (entities) {
+                      const entitiesLen = entities.length;
+                      for (let i = 0; i < entitiesLen; i++) {
+                        const ent = entities[i];
+                        const entity = viewer.current.entities.getById(ent.id);
+                        handleSelectEntity({id: entity}, {
+                          Color: helperFunctionsRef.current.Color,
+                          LabelGraphics: helperFunctionsRef.current.LabelGraphics,
+                          Cartesian2: helperFunctionsRef.current.Cartesian2,
+                          Cartesian3: helperFunctionsRef.current.Cartesian3,
+                          LabelStyle: helperFunctionsRef.current.LabelStyle,
+                          VerticalOrigin: helperFunctionsRef.current.VerticalOrigin,
+                        });
+                        if (ent.id === isTracking) {
+                          shouldUntrack = true;
+                        }
                       }
-                    })
+                    }
                     if (shouldUntrack) trackEntity(undefined);
                   }}
                   clearExtraEntities={clearExtraEntities}
@@ -879,9 +833,6 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
               /> : null
             }
           </div>
-          <audio autoPlay loop controls={false} className={styles["easter-egg-audio"]} ref={easterEggRef}>
-            <source src="./aeiou.mp3"></source>
-          </audio>
         </main>
       </>
       
@@ -889,4 +840,4 @@ const CesiumView = ({ recentLaunches, setLoadingStatus }) => {
   );
 };
 
-export default CesiumView;
+export default Cesium3DView;

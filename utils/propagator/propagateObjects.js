@@ -1,5 +1,5 @@
 import { twoline2satrec } from "satellite.js";
-const { createPropagatedArray } = require("./createPropagatedArray");
+import { createPropagatedArray } from "./createPropagatedArray";
 
 // calculate position and velocity of each object from TLE data
 const propagateObjects = (seenSats, data, startDate, interpolationDegree, helperFunctions) => {

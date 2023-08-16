@@ -1,10 +1,10 @@
 // utils
 import { memo } from "react";
 import { useEffect, useState } from "react";
-import styles from "./index.module.scss";
+import styles from "./Filters.module.scss";
 import { Checkbox } from '@carbon/react';
 
-const Options = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibility, orbitCategories }) => {
+const Filters = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibility, orbitCategories }) => {
   const [categories, setCategories] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -85,4 +85,4 @@ const Options = ({ objectCategories, toggleCategoryVisibility, toggleOrbitVisibi
   );
 };
 
-export default memo(Options);
+export default memo(Filters);

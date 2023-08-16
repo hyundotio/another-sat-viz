@@ -1,35 +1,33 @@
 // utils
 import { memo, useState, useCallback, useEffect } from "react";
 import { debounce } from "lodash";
-import { Add, Subtract } from '@carbon/icons-react';
+import { Reset } from '@carbon/icons-react';
 import {
-  Pagination,
+  Pagination, 
   DataTable,
-  TableContainer, 
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableToolbarSearch, 
-  Button, 
-  TableHeader, 
-  TableBody, 
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableToolbarSearch,
+  Button,
+  TableHeader,
+  TableBody,
   TableCell, 
   TableToolbar, 
   TableToolbarContent, 
 } from '@carbon/react';
 
-const getUTCDate = require("@/utils/shared/getUTCDate");
+import { getUTCDate } from "../utils/shared/getUTCDate";
 
 // components and styles
-import styles from "./index.module.scss";
+import styles from "./SelectedEntitiesList.module.scss";
 
-const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, trackEntity }) => {
-  const ITEMS_CHANGE_DELTA = 30;
+const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntities, unselectEntities }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchFilterValue, setSearchFilterValue] = useState("");
   const [inputSearchValue, setInputSearchValue] = useState("");
-  const [showingSearchItemsCount, setShowingSearchItemsCount] = useState(30);
 
   const changePaginationState = (pageInfo) => {
     if (page !== pageInfo.page) {
@@ -48,29 +46,13 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
   // Debounce search filtering
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSearchChange = useCallback(
-    debounce((value) => setSearchFilterValue(value), 300),
-    []
+    //debounce search
+    debounce((value) => setSearchFilterValue(value), 300), []
   );
   
   const handleInputChange = (e) => {
     setInputSearchValue(e.target.value); // this value is used only for input
     handleSearchChange(e.target.value.trim().toLowerCase());
-  };
-
-  const increaseShowingCount = () => {
-    setShowingSearchItemsCount(showingSearchItemsCount + ITEMS_CHANGE_DELTA);
-  };
-
-  const decreaseShowingCount = () => {
-    const newCount = showingSearchItemsCount - ITEMS_CHANGE_DELTA;
-
-    // Do not allow to set a very low amount
-    if (newCount > 20) {
-      setShowingSearchItemsCount(newCount);
-    }
-    if (page * pageSize > newCount) {
-      setPage(1);
-    }
   };
 
   const headerData = [
@@ -91,16 +73,20 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
       key: 'tle_epoch'
     },
     {
-      header: 'View object',
-      key: 'focus_id'
+      header: 'Track object',
+      key: 'focus'
+    },
+    {
+      header: 'Unselect',
+      key: 'unselect'
     }
   ];
   
   const renderItems = () => {
-    let items = entities;
+    let items = selectedEntities;
     
     if (searchFilterValue) {
-      items = entities.filter((item) =>
+      items = selectedEntities.filter((item) =>
         item.name.includes(searchFilterValue)
         || item.categoryName.includes(searchFilterValue)
         || item.satnum.includes(searchFilterValue)
@@ -109,14 +95,17 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
 
     return items
       .sort((a, b) => b.epochDate - a.epochDate)
-      .slice(0, showingSearchItemsCount)
       .map((entity) => {
         return entity ? {
           common_name: entity.name,
           norad_id: entity.satnum,
           object_type: entity.categoryName,
           tle_epoch: getUTCDate(entity.epochDate),
-          focus_id: {
+          focus: {
+            id: entity.id,
+            selected: selectedEntities.some(ent => ent.id === entity.id)
+          },
+          unselect: {
             id: entity.id,
             selected: selectedEntities.some(ent => ent.id === entity.id)
           },
@@ -129,51 +118,43 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
 
   return (
     <div
+      key="selected-entities-list"
       className={`
-        ${styles["search-container"]}
+        ${styles["selected-entities-list-container"]}
       `}
-      key="catalog-explorer"
     >
-      <DataTable rows={tableItems} headers={headerData} isSortable id="catalog-explorer">
+      <DataTable rows={tableItems} headers={headerData} isSortable id="selected-entities-list">
         {({
           rows,
           headers,
           getHeaderProps,
           getBatchActionProps
         }) => (
-          <TableContainer title="Satellite catalog data explorer">
+          <TableContainer title="Selected objects">
             <TableToolbar>
               <TableToolbarContent>
                 <TableToolbarSearch
-                  id="catalog-explorer-search"
+                  value={inputSearchValue}
+                  id="selected-entities-list-search"
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
                   onChange={handleInputChange}
-                  value={inputSearchValue}
                 />
                 <Button
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
-                  onClick={decreaseShowingCount}
-                  kind="tertiary"
-                  renderIcon={Subtract}
-                >
-                  Show less data
-                </Button>
-                <Button
-                  tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
-                  onClick={increaseShowingCount}
+                  onClick={() => {clearExtraEntities(); trackEntity(undefined);}}
                   kind="secondary"
-                  renderIcon={Add}
+                  renderIcon={Reset}
                 >
-                  Show more data
+                  Unselect all
                 </Button>
               </TableToolbarContent>
             </TableToolbar>
-            <Table className={styles["search-results-container"]} size='xs'>
+            <Table className={styles["selected-entities-list-results-container"]} size='xs'>
               <TableHead>
                 <TableRow>
                   {headers.map((header) => {
                     return (
-                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus_id'})}>
+                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus'})}>
                         {header.header}
                       </TableHeader>
                     )
@@ -186,19 +167,23 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
                   <TableRow key={row.id}>
                     {
                       row.cells.map((cell) => {
-                        if (cell && cell.info && cell.info.header && cell.info.header === 'focus_id') {
-                          return  <TableCell key={cell.id}>
-                                    <button className="cds--link" onClick={() => {
-                                      if (!cell.value.selected) {
-                                        selectEntity(cell.value.id);
-                                      } else {
-                                        trackEntity(cell.value.id);
-                                      }
-                                      setIsSearchOpen(false);
-                                    }}>
-                                      Track and select object
+                        if (cell && cell.info && cell.info.header) {
+                          if (cell.info.header === 'focus') {
+                            return  <TableCell key={cell.id}>
+                                    <button className="cds--link" onClick={() => {trackEntity(cell.value.id);}}>
+                                      Track object
                                     </button>
                                   </TableCell>
+                          }
+                          if (cell.info.header === 'unselect') {
+                            return  <TableCell key={cell.id}>
+                                    <button className="cds--link" onClick={() => {
+                                      unselectEntities(selectedEntities.filter(en => en.id === cell.value.id));
+                                    }}>
+                                      Unselect
+                                    </button>
+                                  </TableCell>
+                          }
                         }
                         return <TableCell key={cell.id}>{cell.value.toUpperCase()}</TableCell>
                       })
@@ -221,4 +206,4 @@ const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, tra
   );
 };
 
-export default memo(Search);
+export default memo(SelectedEntitiesList);
