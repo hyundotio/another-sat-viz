@@ -1,4 +1,4 @@
-const { propagate } = require("satellite.js");
+import { propagate } from "satellite.js";
 
 const EARTH_RADIUS_KM = 6371;
 const GRATIVATIONAL_EARTH_PARAMETER = 3.986004418 * Math.pow(10, 14);
@@ -94,13 +94,18 @@ const julianToDate = (julianDate) => {
 };
 
 // Propagate an array of satrecs with provided time
-const createPropagatedArray = (satrecs, startDate, interpolationDegree, helperFunctions) => {
+export const createPropagatedArray = (satrecs, startDate, interpolationDegree, helperFunctions) => {
   const { SampledPositionProperty, JulianDate, Cartesian3, Cartographic } = helperFunctions;
   const results = [];
   const time = new Date(startDate); // create date copy to not modify the original date
   const startTime = time.getTime();
 
-  satrecs.forEach(({ record, name }) => {
+  const satrecsLen = satrecs.length;
+
+  for (let i = 0; i < satrecsLen; i++) {
+    const satrec = satrecs[i];
+    const record = satrec.record;
+    const name = satrec.name;
     let objPositions = null;
     time.setTime(startTime);
     let propagated = propagateObject(record, time);
@@ -194,17 +199,7 @@ const createPropagatedArray = (satrecs, startDate, interpolationDegree, helperFu
         satnum: record.satnum
       });
     }
-  });
+  }
 
   return results;
-};
-
-// Export as CommonJS to enable testing
-module.exports = {
-  orbitalPeriod,
-  getPointsCountForOrbit,
-  isPropagatedObjectValid,
-  getFormattedCoordinates,
-  julianToDate,
-  createPropagatedArray,
 };

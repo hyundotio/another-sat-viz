@@ -1,33 +1,34 @@
 // utils
 import { memo, useState, useCallback, useEffect } from "react";
 import { debounce } from "lodash";
-import { Reset } from '@carbon/icons-react';
+import { Add, Subtract } from '@carbon/icons-react';
 import {
-  Pagination, 
+  Pagination,
   DataTable,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableToolbarSearch,
-  Button,
-  TableHeader,
-  TableBody,
+  TableContainer, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableToolbarSearch, 
+  Button, 
+  TableHeader, 
+  TableBody, 
   TableCell, 
   TableToolbar, 
   TableToolbarContent, 
 } from '@carbon/react';
-
-const getUTCDate = require("@/utils/shared/getUTCDate");
+import { getUTCDate } from "../utils/shared/getUTCDate";
 
 // components and styles
-import styles from "./index.module.scss";
+import styles from "./Search.module.scss";
 
-const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntities, unselectEntities }) => {
+const Search = ({ entities, selectEntity, setIsSearchOpen, selectedEntities, trackEntity }) => {
+  const ITEMS_CHANGE_DELTA = 30;
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchFilterValue, setSearchFilterValue] = useState("");
   const [inputSearchValue, setInputSearchValue] = useState("");
+  const [showingSearchItemsCount, setShowingSearchItemsCount] = useState(30);
 
   const changePaginationState = (pageInfo) => {
     if (page !== pageInfo.page) {
@@ -46,13 +47,29 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
   // Debounce search filtering
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSearchChange = useCallback(
-    //debounce search
-    debounce((value) => setSearchFilterValue(value), 300), []
+    debounce((value) => setSearchFilterValue(value), 300),
+    []
   );
   
   const handleInputChange = (e) => {
     setInputSearchValue(e.target.value); // this value is used only for input
     handleSearchChange(e.target.value.trim().toLowerCase());
+  };
+
+  const increaseShowingCount = () => {
+    setShowingSearchItemsCount(showingSearchItemsCount + ITEMS_CHANGE_DELTA);
+  };
+
+  const decreaseShowingCount = () => {
+    const newCount = showingSearchItemsCount - ITEMS_CHANGE_DELTA;
+
+    // Do not allow to set a very low amount
+    if (newCount > 20) {
+      setShowingSearchItemsCount(newCount);
+    }
+    if (page * pageSize > newCount) {
+      setPage(1);
+    }
   };
 
   const headerData = [
@@ -73,20 +90,16 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
       key: 'tle_epoch'
     },
     {
-      header: 'Track object',
-      key: 'focus'
-    },
-    {
-      header: 'Unselect',
-      key: 'unselect'
+      header: 'View object',
+      key: 'focus_id'
     }
   ];
   
   const renderItems = () => {
-    let items = selectedEntities;
+    let items = entities;
     
     if (searchFilterValue) {
-      items = selectedEntities.filter((item) =>
+      items = entities.filter((item) =>
         item.name.includes(searchFilterValue)
         || item.categoryName.includes(searchFilterValue)
         || item.satnum.includes(searchFilterValue)
@@ -95,17 +108,14 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
 
     return items
       .sort((a, b) => b.epochDate - a.epochDate)
+      .slice(0, showingSearchItemsCount)
       .map((entity) => {
         return entity ? {
           common_name: entity.name,
           norad_id: entity.satnum,
           object_type: entity.categoryName,
           tle_epoch: getUTCDate(entity.epochDate),
-          focus: {
-            id: entity.id,
-            selected: selectedEntities.some(ent => ent.id === entity.id)
-          },
-          unselect: {
+          focus_id: {
             id: entity.id,
             selected: selectedEntities.some(ent => ent.id === entity.id)
           },
@@ -118,43 +128,51 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
 
   return (
     <div
-      key="selected-entities-list"
       className={`
-        ${styles["selected-entities-list-container"]}
+        ${styles["search-container"]}
       `}
+      key="catalog-explorer"
     >
-      <DataTable rows={tableItems} headers={headerData} isSortable id="selected-entities-list">
+      <DataTable rows={tableItems} headers={headerData} isSortable id="catalog-explorer">
         {({
           rows,
           headers,
           getHeaderProps,
           getBatchActionProps
         }) => (
-          <TableContainer title="Selected objects">
+          <TableContainer title="Satellite catalog data explorer">
             <TableToolbar>
               <TableToolbarContent>
                 <TableToolbarSearch
-                  value={inputSearchValue}
-                  id="selected-entities-list-search"
+                  id="catalog-explorer-search"
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
                   onChange={handleInputChange}
+                  value={inputSearchValue}
                 />
                 <Button
                   tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
-                  onClick={() => {clearExtraEntities(); trackEntity(undefined);}}
-                  kind="secondary"
-                  renderIcon={Reset}
+                  onClick={decreaseShowingCount}
+                  kind="tertiary"
+                  renderIcon={Subtract}
                 >
-                  Unselect all
+                  Show less data
+                </Button>
+                <Button
+                  tabIndex={getBatchActionProps().shouldShowBatchActions ? -1 : 0}
+                  onClick={increaseShowingCount}
+                  kind="secondary"
+                  renderIcon={Add}
+                >
+                  Show more data
                 </Button>
               </TableToolbarContent>
             </TableToolbar>
-            <Table className={styles["selected-entities-list-results-container"]} size='xs'>
+            <Table className={styles["search-results-container"]} size='xs'>
               <TableHead>
                 <TableRow>
                   {headers.map((header) => {
                     return (
-                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus'})}>
+                      <TableHeader key={`header-${header.key}`} {...getHeaderProps({ header, isSortable: header.key !== 'focus_id'})}>
                         {header.header}
                       </TableHeader>
                     )
@@ -167,23 +185,19 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
                   <TableRow key={row.id}>
                     {
                       row.cells.map((cell) => {
-                        if (cell && cell.info && cell.info.header) {
-                          if (cell.info.header === 'focus') {
-                            return  <TableCell key={cell.id}>
-                                    <button className="cds--link" onClick={() => {trackEntity(cell.value.id);}}>
-                                      Track object
-                                    </button>
-                                  </TableCell>
-                          }
-                          if (cell.info.header === 'unselect') {
-                            return  <TableCell key={cell.id}>
+                        if (cell && cell.info && cell.info.header && cell.info.header === 'focus_id') {
+                          return  <TableCell key={cell.id}>
                                     <button className="cds--link" onClick={() => {
-                                      unselectEntities(selectedEntities.filter(en => en.id === cell.value.id));
+                                      if (!cell.value.selected) {
+                                        selectEntity(cell.value.id);
+                                      } else {
+                                        trackEntity(cell.value.id);
+                                      }
+                                      setIsSearchOpen(false);
                                     }}>
-                                      Unselect
+                                      Track and select object
                                     </button>
                                   </TableCell>
-                          }
                         }
                         return <TableCell key={cell.id}>{cell.value.toUpperCase()}</TableCell>
                       })
@@ -206,4 +220,4 @@ const SelectedEntitiesList = ({ trackEntity, selectedEntities, clearExtraEntitie
   );
 };
 
-export default memo(SelectedEntitiesList);
+export default memo(Search);

@@ -1,4 +1,4 @@
-import styles from "./index.module.scss";
+import styles from "./PageLoader.module.scss";
 import { Loading } from '@carbon/react';
 
 const PageLoader = () => {
