@@ -670,7 +670,7 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
       viewer.current.camera.flyHome(0.5); // set initial camera position
     });
 
-  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded, handleSelectEntity]);
+  }, [isLoaded, propagateCategories, setLoadingStatus, startDate, fontIsLoaded, handleSelectEntity, renderResolution]);
 
   return (
     
