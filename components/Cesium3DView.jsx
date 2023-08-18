@@ -52,6 +52,8 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
   const [sidemenuOpened, setSidemenuOpened] = useState(true);
   const [threeDView, setThreeDView] = useState(true);
   const [exponentialMultiplier, setExponentialMultiplier] = useState(0);
+  const [devicePixelRatio, setDevicePixelRatio] = useState(null);
+  const [renderResolution, setRenderResolution] = useState(1);
 
   const resetClock = (date) => {
     if (viewer.current && viewer.current.clock && helperFunctionsRef.current) {
@@ -372,6 +374,13 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
   },[threeDView])
 
   useEffect(() => {
+    if (viewer.current) {
+      //Needs to set it every time it changes.
+      viewer.current.resolutionScale = renderResolution;
+    }
+  }, [renderResolution])
+
+  useEffect(() => {
     //First load fonts
     const plexFont = new FontFace('IBMPlexBold', 'url(./fonts/IBMPlexSans-Bold.woff)');
     plexFont.load().then(function(loaded_face) {
@@ -380,6 +389,8 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
     }).catch(function(error) {
       // error occurred
     });
+
+    setDevicePixelRatio(window.devicePixelRatio);
 
     //Do the ascii art
     console.log(`
@@ -496,6 +507,7 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
       viewer.current.scene.globe.atmosphereBrightnessShift = -0.3;
       viewer.current.scene.globe.atmosphereLightIntensity = 10;
       viewer.current.scene.globe.enableLighting = true;
+      viewer.current.resolutionScale = renderResolution;
       viewer.current.scene.skyBox = new Cesium.SkyBox({
         sources: {
           positiveX: './cesiumAssets/skybox.png',
@@ -506,8 +518,8 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
           negativeZ: './cesiumAssets/skybox.png',
         }
       });
-      viewer.current.scene.sun.destroy();
-      viewer.current.scene.sun = undefined;
+      //viewer.current.scene.sun.destroy();
+      //viewer.current.scene.sun = undefined;
 
       // Calculate position from TLE data
       const {propagatedCategories, initialObjectCategories} = propagateCategories(combinedTLE, {
@@ -689,6 +701,22 @@ const Cesium3DView = ({ recentLaunches, setLoadingStatus }) => {
               toggleOrbitVisibility={toggleOrbitVisibility}
               orbitCategories={orbitCategories}
             />
+            <div className={styles['divider']}></div>
+            <div className={styles['map-type-container']}>
+              <Toggle
+                aria-label="Toggle between high-res vs low-res"
+                id="hd-toggle"
+                labelText="Render in HD"
+                toggled={renderResolution !== 1}
+                disabled={
+                  devicePixelRatio === 1
+                }
+                onToggle={(checked) => {
+                  const DPR = devicePixelRatio ? devicePixelRatio : 1;
+                  setRenderResolution(checked ? DPR : 1);
+                }}
+              />
+            </div>
             <div className={styles['divider']}></div>
             <div className={styles['details-container']}>
               <label className="cds--label">About</label>
